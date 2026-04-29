@@ -1,0 +1,10 @@
+fastapi
+uvicorn[standard]
+motor
+pydantic
+pydantic-settings
+email-validator
+PyJWT
+passlib[bcrypt]
+redis
+aiosmtplib
