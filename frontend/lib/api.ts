@@ -5,6 +5,7 @@ type RequestMethod = "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
 interface RequestOptions {
   method?: RequestMethod;
   body?: unknown;
+  headers?: Record<string, string>;
 }
 
 export class ApiError extends Error {
@@ -18,12 +19,13 @@ export class ApiError extends Error {
 }
 
 export async function apiRequest<T>(path: string, options: RequestOptions = {}): Promise<T> {
-  const { method = "GET", body } = options;
+  const { method = "GET", body, headers } = options;
 
   const response = await fetch(`${API_BASE_URL}${path}`, {
     method,
     headers: {
       "Content-Type": "application/json",
+      ...(headers ?? {}),
     },
     body: body ? JSON.stringify(body) : undefined,
   });

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { apiRequest, ApiError } from "@/lib/api";
 
@@ -36,6 +37,8 @@ interface LoginFormProps {
 
 export function LoginForm({ onFieldFocus, onFieldBlur, onSubmitIntent }: LoginFormProps) {
   const [apiError, setApiError] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const router = useRouter();
 
   const {
     register,
@@ -57,6 +60,11 @@ export function LoginForm({ onFieldFocus, onFieldBlur, onSubmitIntent }: LoginFo
       });
       localStorage.setItem("access_token", response.token.access_token);
       localStorage.setItem("user_role", response.user.role);
+      if (response.user.role === "provider") {
+        router.push("/provider/about");
+      } else {
+        router.push("/providers/search");
+      }
     } catch (error) {
       const message =
         error instanceof ApiError ? error.message : "Unable to sign in right now. Please try again.";
@@ -101,22 +109,50 @@ export function LoginForm({ onFieldFocus, onFieldBlur, onSubmitIntent }: LoginFo
           <label htmlFor="password" className="mb-1.5 block text-sm font-medium text-slate-700">
             Password
           </label>
-          <input
-            id="password"
-            type="password"
-            autoComplete="current-password"
-            className="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-slate-900 shadow-sm transition focus:border-sky-400 focus:outline-none focus:ring-4 focus:ring-sky-100"
-            placeholder="Enter your password"
-            {...register("password", {
-              required: "Password is required",
-              minLength: {
-                value: 8,
-                message: "Password must be at least 8 characters",
-              },
-            })}
-            onFocus={() => onFieldFocus("password")}
-            onBlur={onFieldBlur}
-          />
+          <div className="relative">
+            <input
+              id="password"
+              type={showPassword ? "text" : "password"}
+              autoComplete="current-password"
+              className="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 pr-12 text-slate-900 shadow-sm transition focus:border-sky-400 focus:outline-none focus:ring-4 focus:ring-sky-100"
+              placeholder="Enter your password"
+              {...register("password", {
+                required: "Password is required",
+                minLength: {
+                  value: 8,
+                  message: "Password must be at least 8 characters",
+                },
+              })}
+              onFocus={() => onFieldFocus("password")}
+              onBlur={onFieldBlur}
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword((prev) => !prev)}
+              className="absolute inset-y-0 right-0 flex items-center px-3 text-slate-500 transition hover:text-slate-800"
+              aria-label={showPassword ? "Hide password" : "Show password"}
+            >
+              {showPassword ? (
+                <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.8">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M3 3l18 18" />
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M10.58 10.58A2 2 0 0012 14a2 2 0 001.42-.58M9.88 5.09A9.77 9.77 0 0112 5c5 0 9 7 9 7a17.6 17.6 0 01-3.04 3.94M6.1 6.1C3.9 7.77 2.5 10 2.5 10S6.5 17 12 17c1.48 0 2.83-.27 4.05-.72"
+                  />
+                </svg>
+              ) : (
+                <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.8">
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M2.5 12S6.5 5 12 5s9.5 7 9.5 7-4 7-9.5 7-9.5-7-9.5-7z"
+                  />
+                  <circle cx="12" cy="12" r="3" />
+                </svg>
+              )}
+            </button>
+          </div>
           {errors.password ? (
             <p className="mt-1 text-xs text-rose-500">{errors.password.message}</p>
           ) : null}
