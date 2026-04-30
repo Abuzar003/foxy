@@ -21,6 +21,15 @@ class VerifyPhoneOTPRequest(BaseModel):
     otp: str = Field(min_length=6, max_length=6, pattern=r"^\d{6}$")
 
 
+class UpdateCustomerMobileRequest(BaseModel):
+    phone: str = Field(pattern=r"^(?:\d{10}|\+[1-9]\d{9,14})$")
+    otp: str = Field(min_length=6, max_length=6, pattern=r"^\d{6}$")
+
+
+class CustomerMobileResponse(BaseModel):
+    phone: str
+
+
 class VerifyOTPResponse(BaseModel):
     message: str
     reset_token: str

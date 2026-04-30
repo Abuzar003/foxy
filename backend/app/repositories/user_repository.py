@@ -17,6 +17,9 @@ class UserRepository:
     async def find_by_email(self, email: str) -> Optional[dict]:
         return await self.collection.find_one({"email": email.lower()})
 
+    async def find_by_phone(self, phone: str) -> Optional[dict]:
+        return await self.collection.find_one({"phone": phone})
+
     async def create_user(self, payload: UserDocument) -> dict:
         now = datetime.now(timezone.utc)
         payload["created_at"] = now
@@ -66,6 +69,20 @@ class UserRepository:
             {
                 "$set": {
                     **payload,
+                    "updated_at": datetime.now(timezone.utc),
+                }
+            },
+        )
+        return await self.collection.find_one({"_id": ObjectId(user_id), "role": "customer"})
+
+    async def update_customer_mobile(self, user_id: str, phone: str) -> Optional[dict]:
+        if not ObjectId.is_valid(user_id):
+            return None
+        await self.collection.update_one(
+            {"_id": ObjectId(user_id), "role": "customer"},
+            {
+                "$set": {
+                    "phone": phone,
                     "updated_at": datetime.now(timezone.utc),
                 }
             },

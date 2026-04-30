@@ -10,7 +10,13 @@ from app.api.dependencies import (
 )
 from app.core.exceptions import NotFoundException, UnauthorizedException
 from app.repositories.user_repository import UserRepository
-from app.schemas.auth import MessageResponse, SendPhoneOTPRequest, VerifyPhoneOTPRequest
+from app.schemas.auth import (
+    CustomerMobileResponse,
+    MessageResponse,
+    SendPhoneOTPRequest,
+    UpdateCustomerMobileRequest,
+    VerifyPhoneOTPRequest,
+)
 from app.schemas.user import (
     AuthResponse,
     CustomerPreferenceResponse,
@@ -81,6 +87,36 @@ async def verify_phone_otp(
             detail="Invalid or expired OTP",
         )
     return MessageResponse(message="Phone OTP verified")
+
+
+@router.put("/customer/mobile", response_model=CustomerMobileResponse)
+async def update_customer_mobile(
+    payload: UpdateCustomerMobileRequest,
+    current_user: Annotated[dict, Depends(get_current_user)],
+    otp_service: Annotated[OTPService, Depends(get_otp_service)],
+    user_repo: Annotated[UserRepository, Depends(get_user_repository)],
+) -> CustomerMobileResponse:
+    if current_user.get("role") != "customer":
+        raise UnauthorizedException("Only customers can update mobile number")
+
+    is_valid = await otp_service.verify_phone_otp(payload.phone, payload.otp)
+    if not is_valid:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid or expired OTP",
+        )
+
+    existing_user = await user_repo.find_by_phone(payload.phone)
+    if existing_user and str(existing_user.get("_id")) != current_user.get("user_id"):
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Phone number already in use",
+        )
+
+    updated = await user_repo.update_customer_mobile(current_user["user_id"], payload.phone)
+    if not updated:
+        raise NotFoundException("Customer not found")
+    return CustomerMobileResponse(phone=updated["phone"])
 
 
 @router.get("/provider/about", response_model=ProviderAboutResponse)
