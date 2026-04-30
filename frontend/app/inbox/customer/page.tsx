@@ -4,12 +4,16 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ApiError } from "@/lib/api";
 import { getCustomerOffers, OfferInboxResponse, ServiceOffer } from "@/lib/offers";
+import { getOfferMessages, sendOfferMessage, OfferMessage } from "@/lib/offerMessages";
 
 export default function CustomerInboxPage() {
   const router = useRouter();
   const [offers, setOffers] = useState<ServiceOffer[]>([]);
   const [counts, setCounts] = useState<OfferInboxResponse | null>(null);
   const [error, setError] = useState("");
+  const [messageDrafts, setMessageDrafts] = useState<Record<string, string>>({});
+  const [threads, setThreads] = useState<Record<string, OfferMessage[]>>({});
+  const [token, setToken] = useState<string | null>(null);
 
   useEffect(() => {
     const loadInbox = async () => {
@@ -19,6 +23,7 @@ export default function CustomerInboxPage() {
         router.replace("/auth/login");
         return;
       }
+      setToken(token);
       try {
         const response = await getCustomerOffers(undefined, token);
         setOffers(response.offers);
@@ -31,7 +36,41 @@ export default function CustomerInboxPage() {
     void loadInbox();
   }, [router]);
 
+  useEffect(() => {
+    if (!token) return;
+    const intervalId = window.setInterval(async () => {
+      try {
+        const response = await getCustomerOffers(undefined, token);
+        setOffers(response.offers);
+        setCounts(response);
+      } catch {
+        // Silent retry on next tick.
+      }
+    }, 8000);
+    return () => window.clearInterval(intervalId);
+  }, [token]);
+
   const acceptedCount = useMemo(() => counts?.accepted_count ?? 0, [counts]);
+
+  const refreshThread = async (offerId: string) => {
+    if (!token) return;
+    try {
+      const messages = await getOfferMessages(offerId, token);
+      setThreads((prev) => ({ ...prev, [offerId]: messages }));
+    } catch {
+      // Keep inbox usable even if thread fetch fails.
+    }
+  };
+
+  useEffect(() => {
+    if (!token || offers.length === 0) return;
+    const intervalId = window.setInterval(() => {
+      offers.forEach((offer) => {
+        void refreshThread(offer.id);
+      });
+    }, 6000);
+    return () => window.clearInterval(intervalId);
+  }, [offers, token]);
 
   return (
     <main className="min-h-screen bg-gradient-to-b from-slate-50 via-white to-sky-50 px-6 py-12">
@@ -80,6 +119,49 @@ export default function CustomerInboxPage() {
                   Provider message: {offer.provider_reply}
                 </p>
               ) : null}
+
+              <div className="mt-3 space-y-2 rounded-xl border border-slate-200 bg-slate-50/70 p-3">
+                <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Messages</p>
+                {(threads[offer.id] ?? []).slice(-5).map((m, idx) => (
+                  <p key={`${offer.id}-msg-${idx}-${m.created_at}`} className="text-sm text-slate-700">
+                    <span className="font-semibold">
+                      {m.sender_role === "customer" ? "You" : "Provider"}:
+                    </span>{" "}
+                    {m.text}
+                  </p>
+                ))}
+                <div className="flex gap-2">
+                  <input
+                    value={messageDrafts[offer.id] ?? ""}
+                    onChange={(event) =>
+                      setMessageDrafts((prev) => ({ ...prev, [offer.id]: event.target.value }))
+                    }
+                    className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm transition focus:border-sky-400 focus:outline-none focus:ring-4 focus:ring-sky-100"
+                    placeholder="Send optional message to provider"
+                  />
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      if (!token) return;
+                      const text = messageDrafts[offer.id] ?? "";
+                      if (!text.trim()) return;
+                      await sendOfferMessage(offer.id, text, token);
+                      setMessageDrafts((prev) => ({ ...prev, [offer.id]: "" }));
+                      await refreshThread(offer.id);
+                    }}
+                    className="shrink-0 rounded-xl bg-slate-900 px-3 py-2 text-sm font-semibold text-white transition hover:bg-slate-800"
+                  >
+                    Send
+                  </button>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => void refreshThread(offer.id)}
+                  className="text-xs font-medium text-slate-500 hover:text-slate-800"
+                >
+                  Refresh messages
+                </button>
+              </div>
             </article>
           ))}
         </section>

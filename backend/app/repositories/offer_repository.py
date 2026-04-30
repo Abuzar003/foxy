@@ -136,3 +136,44 @@ class OfferRepository:
             update_doc["provider_reply"] = provider_reply
         await self.collection.update_one({"_id": ObjectId(offer_id)}, {"$set": update_doc})
         return await self.collection.find_one({"_id": ObjectId(offer_id)})
+
+    async def add_offer_message(
+        self,
+        *,
+        offer_id: str,
+        sender_id: str,
+        sender_role: Literal["customer", "provider"],
+        text: str,
+    ) -> Optional[dict]:
+        if not ObjectId.is_valid(offer_id):
+            return None
+        message_doc = {
+            "sender_id": sender_id,
+            "sender_role": sender_role,
+            "text": text,
+            "created_at": datetime.now(timezone.utc),
+        }
+        await self.collection.update_one(
+            {"_id": ObjectId(offer_id)},
+            {
+                "$push": {"messages": message_doc},
+                "$set": {"updated_at": datetime.now(timezone.utc)},
+            },
+        )
+        return message_doc
+
+    async def list_offer_messages(
+        self,
+        *,
+        offer_id: str,
+        before: datetime | None = None,
+        limit: int = 50,
+    ) -> list[dict]:
+        offer = await self.get_offer_by_id(offer_id)
+        if not offer:
+            return []
+        messages = offer.get("messages", [])
+        messages = sorted(messages, key=lambda msg: msg.get("created_at"))
+        if before is not None:
+            messages = [msg for msg in messages if msg.get("created_at") < before]
+        return messages[-limit:]

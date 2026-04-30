@@ -1,4 +1,4 @@
-from datetime import date, datetime, time
+from datetime import date, datetime, time, timedelta
 from typing import Annotated, Optional
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
@@ -13,6 +13,9 @@ from app.schemas.offer import (
     CreateOfferRequest,
     OfferInboxCounts,
     OfferInboxResponse,
+    OfferMessageCreateRequest,
+    OfferMessageResponse,
+    OfferMessagesResponse,
     OfferResponse,
     OfferSlotResponse,
     OfferStatus,
@@ -53,7 +56,21 @@ def _normalize_slots(payload: CreateOfferRequest) -> tuple[list[dict], float, in
 
     raw_slots: list[tuple[str, str, str]] = []
     if payload.schedule_type == "single":
-        raw_slots.append((payload.date or "", payload.start_time or "", payload.end_time or ""))
+        if payload.date and payload.start_time and payload.end_time:
+            raw_slots.append((payload.date, payload.start_time, payload.end_time))
+        else:
+            now_local = datetime.now(zone)
+            # Backward compatibility: when old clients omit schedule fields,
+            # create a default 1-hour slot at the next rounded hour.
+            next_hour = (now_local.replace(minute=0, second=0, microsecond=0) + timedelta(hours=1))
+            end_hour = next_hour + timedelta(hours=1)
+            raw_slots.append(
+                (
+                    next_hour.date().isoformat(),
+                    next_hour.strftime("%H:%M"),
+                    end_hour.strftime("%H:%M"),
+                )
+            )
     else:
         raw_slots.extend((slot.date, slot.start_time, slot.end_time) for slot in payload.slots)
 
@@ -300,3 +317,59 @@ async def get_offer_detail(
     if user_id not in {offer["customer_id"], offer["provider_id"]}:
         raise UnauthorizedException("You are not authorized to view this offer")
     return _to_offer_response(offer)
+
+
+@router.post("/{offer_id}/messages", response_model=OfferMessageResponse, status_code=status.HTTP_201_CREATED)
+async def add_offer_message(
+    offer_id: str,
+    payload: OfferMessageCreateRequest,
+    current_user: Annotated[dict, Depends(get_current_user)],
+    offer_repo: Annotated[OfferRepository, Depends(get_offer_repository)],
+) -> OfferMessageResponse:
+    offer = await offer_repo.get_offer_by_id(offer_id)
+    if not offer:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Offer not found")
+
+    user_id = current_user["user_id"]
+    user_role = current_user.get("role")
+    if user_id not in {offer["customer_id"], offer["provider_id"]}:
+        raise UnauthorizedException("You are not authorized to message in this offer")
+    if user_role not in {"customer", "provider"}:
+        raise UnauthorizedException("Invalid user role for messaging")
+
+    created = await offer_repo.add_offer_message(
+        offer_id=offer_id,
+        sender_id=user_id,
+        sender_role=user_role,
+        text=payload.text,
+    )
+    if not created:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Offer not found")
+    return OfferMessageResponse(**created)
+
+
+@router.get("/{offer_id}/messages", response_model=OfferMessagesResponse)
+async def get_offer_messages(
+    offer_id: str,
+    current_user: Annotated[dict, Depends(get_current_user)],
+    offer_repo: Annotated[OfferRepository, Depends(get_offer_repository)],
+    before: Optional[datetime] = Query(default=None),
+    limit: int = Query(default=50, ge=1, le=200),
+) -> OfferMessagesResponse:
+    offer = await offer_repo.get_offer_by_id(offer_id)
+    if not offer:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Offer not found")
+
+    user_id = current_user["user_id"]
+    if user_id not in {offer["customer_id"], offer["provider_id"]}:
+        raise UnauthorizedException("You are not authorized to view these messages")
+
+    messages = await offer_repo.list_offer_messages(
+        offer_id=offer_id,
+        before=before,
+        limit=limit,
+    )
+    return OfferMessagesResponse(
+        offer_id=offer_id,
+        messages=[OfferMessageResponse(**message) for message in messages],
+    )

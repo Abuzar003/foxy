@@ -75,6 +75,20 @@ export default function ProviderSearchPage() {
   >({});
   const [eligibleReviewProviderIds, setEligibleReviewProviderIds] = useState<Set<string>>(new Set());
 
+  const timeOptions = useMemo(() => {
+    const slots: Array<{ value: string; label: string }> = [];
+    for (let hour = 0; hour < 24; hour += 1) {
+      for (let minute = 0; minute < 60; minute += 30) {
+        const value = `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`;
+        const ampm = hour >= 12 ? "PM" : "AM";
+        const h12 = hour % 12 === 0 ? 12 : hour % 12;
+        const label = `${String(h12).padStart(2, "0")}:${String(minute).padStart(2, "0")} ${ampm}`;
+        slots.push({ value, label });
+      }
+    }
+    return slots;
+  }, []);
+
   useEffect(() => {
     const loadTaxonomy = async () => {
       try {
@@ -588,22 +602,34 @@ export default function ProviderSearchPage() {
                           }
                           className="rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm transition focus:border-sky-400 focus:outline-none focus:ring-4 focus:ring-sky-100"
                         />
-                        <input
-                          type="time"
+                        <select
                           value={offerStartTime[provider.id] ?? ""}
                           onChange={(event) =>
                             setOfferStartTime((prev) => ({ ...prev, [provider.id]: event.target.value }))
                           }
                           className="rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm transition focus:border-sky-400 focus:outline-none focus:ring-4 focus:ring-sky-100"
-                        />
-                        <input
-                          type="time"
+                        >
+                          <option value="">Start time</option>
+                          {timeOptions.map((slot) => (
+                            <option key={`single-start-${slot.value}`} value={slot.value}>
+                              {slot.label}
+                            </option>
+                          ))}
+                        </select>
+                        <select
                           value={offerEndTime[provider.id] ?? ""}
                           onChange={(event) =>
                             setOfferEndTime((prev) => ({ ...prev, [provider.id]: event.target.value }))
                           }
                           className="rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm transition focus:border-sky-400 focus:outline-none focus:ring-4 focus:ring-sky-100"
-                        />
+                        >
+                          <option value="">End time</option>
+                          {timeOptions.map((slot) => (
+                            <option key={`single-end-${slot.value}`} value={slot.value}>
+                              {slot.label}
+                            </option>
+                          ))}
+                        </select>
                       </div>
                     ) : (
                       <div className="space-y-2 rounded-xl border border-slate-200 bg-white p-2.5">
@@ -622,8 +648,7 @@ export default function ProviderSearchPage() {
                               }
                               className="rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm transition focus:border-sky-400 focus:outline-none focus:ring-4 focus:ring-sky-100"
                             />
-                            <input
-                              type="time"
+                            <select
                               value={slot.start_time}
                               onChange={(event) =>
                                 setOfferSlots((prev) => {
@@ -633,9 +658,15 @@ export default function ProviderSearchPage() {
                                 })
                               }
                               className="rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm transition focus:border-sky-400 focus:outline-none focus:ring-4 focus:ring-sky-100"
-                            />
-                            <input
-                              type="time"
+                            >
+                              <option value="">Start time</option>
+                              {timeOptions.map((opt) => (
+                                <option key={`multi-start-${idx}-${opt.value}`} value={opt.value}>
+                                  {opt.label}
+                                </option>
+                              ))}
+                            </select>
+                            <select
                               value={slot.end_time}
                               onChange={(event) =>
                                 setOfferSlots((prev) => {
@@ -645,7 +676,14 @@ export default function ProviderSearchPage() {
                                 })
                               }
                               className="rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm transition focus:border-sky-400 focus:outline-none focus:ring-4 focus:ring-sky-100"
-                            />
+                            >
+                              <option value="">End time</option>
+                              {timeOptions.map((opt) => (
+                                <option key={`multi-end-${idx}-${opt.value}`} value={opt.value}>
+                                  {opt.label}
+                                </option>
+                              ))}
+                            </select>
                           </div>
                         ))}
                         <button

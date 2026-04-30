@@ -13,6 +13,13 @@ class OfferSlot(TypedDict):
     end_time_local: str
 
 
+class OfferMessage(TypedDict):
+    sender_id: str
+    sender_role: Literal["customer", "provider"]
+    text: str
+    created_at: datetime
+
+
 class OfferDocument(TypedDict):
     customer_id: str
     customer_name: str
@@ -29,5 +36,6 @@ class OfferDocument(TypedDict):
     status: OfferStatus
     message: str
     provider_reply: NotRequired[str]
+    messages: NotRequired[list[OfferMessage]]
     created_at: datetime
     updated_at: datetime

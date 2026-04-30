@@ -18,21 +18,17 @@ class CreateOfferRequest(BaseModel):
     service: str = Field(min_length=2, max_length=120)
     base_price: float = Field(gt=0)
     offered_price: float = Field(gt=0)
-    message: str = Field(min_length=2, max_length=1000)
-    schedule_type: ScheduleType
+    message: str = Field(default="", max_length=1000)
+    schedule_type: ScheduleType = "single"
     date: Optional[str] = Field(default=None, min_length=10, max_length=10)
     start_time: Optional[str] = Field(default=None, min_length=5, max_length=5)
     end_time: Optional[str] = Field(default=None, min_length=5, max_length=5)
     slots: list[OfferSlotInput] = Field(default_factory=list)
-    timezone: str = Field(min_length=2, max_length=64)
+    timezone: str = Field(default="Asia/Kolkata", min_length=2, max_length=64)
 
     @model_validator(mode="after")
     def validate_schedule_shape(self) -> "CreateOfferRequest":
         if self.schedule_type == "single":
-            if not (self.date and self.start_time and self.end_time):
-                raise ValueError(
-                    "For single schedule_type, date, start_time, and end_time are required"
-                )
             if self.slots:
                 raise ValueError("slots must be empty when schedule_type is single")
         if self.schedule_type == "multi":
@@ -87,3 +83,19 @@ class OfferInboxCounts(BaseModel):
 class OfferInboxResponse(BaseModel):
     offers: list[OfferResponse]
     counts: OfferInboxCounts
+
+
+class OfferMessageCreateRequest(BaseModel):
+    text: str = Field(min_length=1, max_length=2000)
+
+
+class OfferMessageResponse(BaseModel):
+    sender_id: str
+    sender_role: Literal["customer", "provider"]
+    text: str
+    created_at: datetime
+
+
+class OfferMessagesResponse(BaseModel):
+    offer_id: str
+    messages: list[OfferMessageResponse]
