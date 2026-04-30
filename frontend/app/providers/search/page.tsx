@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { apiRequest, ApiError } from "@/lib/api";
+import { createOffer, getCustomerOffers } from "@/lib/offers";
 
 interface ServiceTaxonomyResponse {
   categories: Record<string, string[]>;
@@ -18,10 +19,31 @@ interface ProviderSearchResult {
   profile_photo?: string;
   about?: string;
   age?: number;
+  rating_average?: number;
+  rating_count?: number;
 }
 
 interface ProviderSearchResponse {
   providers: ProviderSearchResult[];
+}
+
+interface FeedbackDraft {
+  rating: number;
+  review: string;
+}
+
+interface ProviderReview {
+  rating: number;
+  comment: string;
+  reviewer_id?: string;
+  created_at?: string;
+}
+
+interface ProviderReviewsResponse {
+  provider_id: string;
+  rating_average: number;
+  rating_count: number;
+  reviews: ProviderReview[];
 }
 
 export default function ProviderSearchPage() {
@@ -34,6 +56,24 @@ export default function ProviderSearchPage() {
   const [providers, setProviders] = useState<ProviderSearchResult[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [error, setError] = useState("");
+  const [activeFeedbackProviderId, setActiveFeedbackProviderId] = useState<string | null>(null);
+  const [activeOfferProviderId, setActiveOfferProviderId] = useState<string | null>(null);
+  const [feedbackDrafts, setFeedbackDrafts] = useState<Record<string, FeedbackDraft>>({});
+  const [feedbackStatus, setFeedbackStatus] = useState<Record<string, string>>({});
+  const [providerReviews, setProviderReviews] = useState<Record<string, ProviderReviewsResponse>>({});
+  const [isSubmittingFeedback, setIsSubmittingFeedback] = useState<Record<string, boolean>>({});
+  const [offerPrice, setOfferPrice] = useState<Record<string, string>>({});
+  const [offerService, setOfferService] = useState<Record<string, string>>({});
+  const [offerMessage, setOfferMessage] = useState<Record<string, string>>({});
+  const [offerStatus, setOfferStatus] = useState<Record<string, string>>({});
+  const [offerScheduleType, setOfferScheduleType] = useState<Record<string, "single" | "multi">>({});
+  const [offerDate, setOfferDate] = useState<Record<string, string>>({});
+  const [offerStartTime, setOfferStartTime] = useState<Record<string, string>>({});
+  const [offerEndTime, setOfferEndTime] = useState<Record<string, string>>({});
+  const [offerSlots, setOfferSlots] = useState<
+    Record<string, Array<{ date: string; start_time: string; end_time: string }>>
+  >({});
+  const [eligibleReviewProviderIds, setEligibleReviewProviderIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     const loadTaxonomy = async () => {
@@ -87,6 +127,214 @@ export default function ProviderSearchPage() {
     void searchProviders();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useEffect(() => {
+    const loadEligibleReviewProviders = async () => {
+      const role = localStorage.getItem("user_role");
+      const token = localStorage.getItem("access_token");
+      if (role !== "customer" || !token) return;
+
+      try {
+        const inbox = await getCustomerOffers("accepted", token);
+        const now = Date.now();
+        const completedProviderIds = inbox.offers
+          .filter((offer) => offer.slots.some((slot) => new Date(slot.end_at_utc).getTime() < now))
+          .map((offer) => offer.provider_id);
+        setEligibleReviewProviderIds(new Set(completedProviderIds));
+      } catch {
+        // Keep view usable even if eligibility fetch fails.
+      }
+    };
+
+    void loadEligibleReviewProviders();
+  }, []);
+
+  const updateFeedbackDraft = (providerId: string, patch: Partial<FeedbackDraft>) => {
+    setFeedbackDrafts((prev) => ({
+      ...prev,
+      [providerId]: {
+        rating: prev[providerId]?.rating ?? 0,
+        review: prev[providerId]?.review ?? "",
+        ...patch,
+      },
+    }));
+  };
+
+  const loadProviderReviews = async (providerId: string) => {
+    try {
+      const response = await apiRequest<ProviderReviewsResponse>(`/providers/${providerId}/reviews`);
+      setProviderReviews((prev) => ({ ...prev, [providerId]: response }));
+    } catch {
+      // Keep UI resilient even if review history fails.
+    }
+  };
+
+  const submitFeedback = async (providerId: string) => {
+    if (!eligibleReviewProviderIds.has(providerId)) {
+      setFeedbackStatus((prev) => ({
+        ...prev,
+        [providerId]: "Feedback is allowed only after service completion.",
+      }));
+      return;
+    }
+
+    const draft = feedbackDrafts[providerId];
+    if (!draft || draft.rating < 1 || !draft.review.trim()) {
+      setFeedbackStatus((prev) => ({
+        ...prev,
+        [providerId]: "Please select a star rating and write a short review.",
+      }));
+      return;
+    }
+
+    const token = localStorage.getItem("access_token");
+    if (!token) {
+      setFeedbackStatus((prev) => ({
+        ...prev,
+        [providerId]: "Please login as customer to submit feedback.",
+      }));
+      return;
+    }
+
+    try {
+      setIsSubmittingFeedback((prev) => ({ ...prev, [providerId]: true }));
+      await apiRequest(`/providers/${providerId}/reviews`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        body: {
+          rating: draft.rating,
+          comment: draft.review.trim(),
+        },
+      });
+
+      setFeedbackStatus((prev) => ({
+        ...prev,
+        [providerId]: "Feedback submitted successfully.",
+      }));
+      setFeedbackDrafts((prev) => ({
+        ...prev,
+        [providerId]: { rating: 0, review: "" },
+      }));
+      await Promise.all([searchProviders(), loadProviderReviews(providerId)]);
+      setActiveFeedbackProviderId(null);
+    } catch (err) {
+      const message = err instanceof ApiError ? err.message : "Unable to submit feedback right now.";
+      setFeedbackStatus((prev) => ({
+        ...prev,
+        [providerId]: message,
+      }));
+    } finally {
+      setIsSubmittingFeedback((prev) => ({ ...prev, [providerId]: false }));
+    }
+  };
+
+  const submitOffer = async (provider: ProviderSearchResult) => {
+    const role = localStorage.getItem("user_role");
+    const token = localStorage.getItem("access_token");
+    if (!token || role !== "customer") {
+      setOfferStatus((prev) => ({
+        ...prev,
+        [provider.id]: "Please login as a customer to send offers.",
+      }));
+      return;
+    }
+
+    const basePrice = provider.price_per_hour ?? provider.price_per_day ?? 1;
+    const offered = Number(offerPrice[provider.id] || 0);
+    const service = offerService[provider.id] || provider.services[0] || "";
+    const scheduleType = offerScheduleType[provider.id] ?? "single";
+
+    if (!service) {
+      setOfferStatus((prev) => ({ ...prev, [provider.id]: "Select a service before sending offer." }));
+      return;
+    }
+    if (!Number.isFinite(offered) || offered < basePrice) {
+      setOfferStatus((prev) => ({
+        ...prev,
+        [provider.id]: `Offer must be at least base price ₹${basePrice}.`,
+      }));
+      return;
+    }
+
+    try {
+      const today = new Date();
+      const todayDateStr = today.toISOString().slice(0, 10);
+
+      if (scheduleType === "single") {
+        const date = offerDate[provider.id];
+        const start = offerStartTime[provider.id];
+        const end = offerEndTime[provider.id];
+        if (!date || !start || !end) {
+          setOfferStatus((prev) => ({
+            ...prev,
+            [provider.id]: "Select date, start time, and end time.",
+          }));
+          return;
+        }
+        if (date <= todayDateStr) {
+          setOfferStatus((prev) => ({
+            ...prev,
+            [provider.id]: "Service date must be in the future.",
+          }));
+          return;
+        }
+        await createOffer(
+          {
+            provider_id: provider.id,
+            service,
+            base_price: basePrice,
+            offered_price: offered,
+            message: offerMessage[provider.id]?.trim() || undefined,
+            schedule_type: "single",
+            date,
+            start_time: start,
+            end_time: end,
+            timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC",
+          },
+          token,
+        );
+      } else {
+        const slots = offerSlots[provider.id] ?? [];
+        if (slots.length === 0 || slots.some((s) => !s.date || !s.start_time || !s.end_time)) {
+          setOfferStatus((prev) => ({
+            ...prev,
+            [provider.id]: "Add at least one complete slot for multi schedule.",
+          }));
+          return;
+        }
+        const hasPastOrToday = slots.some((slot) => slot.date <= todayDateStr);
+        if (hasPastOrToday) {
+          setOfferStatus((prev) => ({
+            ...prev,
+            [provider.id]: "All selected slot dates must be in the future.",
+          }));
+          return;
+        }
+        await createOffer(
+          {
+            provider_id: provider.id,
+            service,
+            base_price: basePrice,
+            offered_price: offered,
+            message: offerMessage[provider.id]?.trim() || undefined,
+            schedule_type: "multi",
+            slots,
+            timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC",
+          },
+          token,
+        );
+      }
+
+      setOfferStatus((prev) => ({ ...prev, [provider.id]: "Offer sent to provider inbox." }));
+      setActiveOfferProviderId(null);
+      setOfferMessage((prev) => ({ ...prev, [provider.id]: "" }));
+    } catch (err) {
+      const message = err instanceof ApiError ? err.message : "Failed to send offer.";
+      setOfferStatus((prev) => ({ ...prev, [provider.id]: message }));
+    }
+  };
 
   return (
     <main className="min-h-screen bg-gradient-to-b from-slate-50 via-white to-sky-50 px-6 py-12">
@@ -214,6 +462,13 @@ export default function ProviderSearchPage() {
                 <div className="min-w-0 flex-1">
                   <h2 className="truncate text-lg font-semibold text-slate-900">{provider.full_name}</h2>
                   <p className="mt-0.5 text-sm text-slate-500">{provider.address || "Address not shared"}</p>
+                  <p className="mt-1 text-xs text-slate-500">
+                    Rating:{" "}
+                    <span className="font-semibold text-slate-800">
+                      {provider.rating_average ? provider.rating_average.toFixed(1) : "N/A"}
+                    </span>{" "}
+                    ({provider.rating_count ?? 0} reviews)
+                  </p>
                 </div>
               </div>
 
@@ -247,6 +502,288 @@ export default function ProviderSearchPage() {
               </div>
 
               {provider.about ? <p className="mt-3 text-sm text-slate-600">{provider.about}</p> : null}
+
+              <div className="mt-4 border-t border-slate-200 pt-4">
+                <div className="mb-3">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setActiveOfferProviderId((prev) => (prev === provider.id ? null : provider.id));
+                      if (!offerPrice[provider.id]) {
+                        const base = provider.price_per_hour ?? provider.price_per_day ?? 1;
+                        setOfferPrice((prev) => ({ ...prev, [provider.id]: String(base) }));
+                      }
+                      if (!offerService[provider.id]) {
+                        setOfferService((prev) => ({ ...prev, [provider.id]: provider.services[0] ?? "" }));
+                      }
+                      if (!offerScheduleType[provider.id]) {
+                        setOfferScheduleType((prev) => ({ ...prev, [provider.id]: "single" }));
+                      }
+                    }}
+                    className="rounded-xl border border-slate-300 bg-white px-3 py-1.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+                  >
+                    {activeOfferProviderId === provider.id ? "Close offer" : "Bid / Send Offer"}
+                  </button>
+                </div>
+
+                {activeOfferProviderId === provider.id ? (
+                  <div className="mb-4 space-y-3 rounded-xl border border-slate-200 bg-slate-50/70 p-3.5">
+                    <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                      <div>
+                        <label className="mb-1 block text-xs font-semibold text-slate-600">Service</label>
+                        <select
+                          value={offerService[provider.id] ?? ""}
+                          onChange={(event) =>
+                            setOfferService((prev) => ({ ...prev, [provider.id]: event.target.value }))
+                          }
+                          className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm transition focus:border-sky-400 focus:outline-none focus:ring-4 focus:ring-sky-100"
+                        >
+                          {provider.services.map((s) => (
+                            <option key={`${provider.id}-${s}`} value={s}>
+                              {s}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                      <div>
+                        <label className="mb-1 block text-xs font-semibold text-slate-600">
+                          Your bid (minimum ₹{provider.price_per_hour ?? provider.price_per_day ?? 1})
+                        </label>
+                        <input
+                          type="number"
+                          min={provider.price_per_hour ?? provider.price_per_day ?? 1}
+                          value={offerPrice[provider.id] ?? ""}
+                          onChange={(event) =>
+                            setOfferPrice((prev) => ({ ...prev, [provider.id]: event.target.value }))
+                          }
+                          className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm transition focus:border-sky-400 focus:outline-none focus:ring-4 focus:ring-sky-100"
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="mb-1 block text-xs font-semibold text-slate-600">Schedule type</label>
+                      <select
+                        value={offerScheduleType[provider.id] ?? "single"}
+                        onChange={(event) =>
+                          setOfferScheduleType((prev) => ({
+                            ...prev,
+                            [provider.id]: event.target.value as "single" | "multi",
+                          }))
+                        }
+                        className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm transition focus:border-sky-400 focus:outline-none focus:ring-4 focus:ring-sky-100"
+                      >
+                        <option value="single">Single date</option>
+                        <option value="multi">Multiple dates</option>
+                      </select>
+                    </div>
+
+                    {(offerScheduleType[provider.id] ?? "single") === "single" ? (
+                      <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+                        <input
+                          type="date"
+                          min={new Date(Date.now() + 86400000).toISOString().slice(0, 10)}
+                          value={offerDate[provider.id] ?? ""}
+                          onChange={(event) =>
+                            setOfferDate((prev) => ({ ...prev, [provider.id]: event.target.value }))
+                          }
+                          className="rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm transition focus:border-sky-400 focus:outline-none focus:ring-4 focus:ring-sky-100"
+                        />
+                        <input
+                          type="time"
+                          value={offerStartTime[provider.id] ?? ""}
+                          onChange={(event) =>
+                            setOfferStartTime((prev) => ({ ...prev, [provider.id]: event.target.value }))
+                          }
+                          className="rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm transition focus:border-sky-400 focus:outline-none focus:ring-4 focus:ring-sky-100"
+                        />
+                        <input
+                          type="time"
+                          value={offerEndTime[provider.id] ?? ""}
+                          onChange={(event) =>
+                            setOfferEndTime((prev) => ({ ...prev, [provider.id]: event.target.value }))
+                          }
+                          className="rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm transition focus:border-sky-400 focus:outline-none focus:ring-4 focus:ring-sky-100"
+                        />
+                      </div>
+                    ) : (
+                      <div className="space-y-2 rounded-xl border border-slate-200 bg-white p-2.5">
+                        {(offerSlots[provider.id] ?? []).map((slot, idx) => (
+                          <div key={`${provider.id}-slot-${idx}`} className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+                            <input
+                              type="date"
+                              min={new Date(Date.now() + 86400000).toISOString().slice(0, 10)}
+                              value={slot.date}
+                              onChange={(event) =>
+                                setOfferSlots((prev) => {
+                                  const next = [...(prev[provider.id] ?? [])];
+                                  next[idx] = { ...next[idx], date: event.target.value };
+                                  return { ...prev, [provider.id]: next };
+                                })
+                              }
+                              className="rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm transition focus:border-sky-400 focus:outline-none focus:ring-4 focus:ring-sky-100"
+                            />
+                            <input
+                              type="time"
+                              value={slot.start_time}
+                              onChange={(event) =>
+                                setOfferSlots((prev) => {
+                                  const next = [...(prev[provider.id] ?? [])];
+                                  next[idx] = { ...next[idx], start_time: event.target.value };
+                                  return { ...prev, [provider.id]: next };
+                                })
+                              }
+                              className="rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm transition focus:border-sky-400 focus:outline-none focus:ring-4 focus:ring-sky-100"
+                            />
+                            <input
+                              type="time"
+                              value={slot.end_time}
+                              onChange={(event) =>
+                                setOfferSlots((prev) => {
+                                  const next = [...(prev[provider.id] ?? [])];
+                                  next[idx] = { ...next[idx], end_time: event.target.value };
+                                  return { ...prev, [provider.id]: next };
+                                })
+                              }
+                              className="rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm transition focus:border-sky-400 focus:outline-none focus:ring-4 focus:ring-sky-100"
+                            />
+                          </div>
+                        ))}
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setOfferSlots((prev) => ({
+                              ...prev,
+                              [provider.id]: [
+                                ...(prev[provider.id] ?? []),
+                                { date: "", start_time: "", end_time: "" },
+                              ],
+                            }))
+                          }
+                          className="rounded-xl border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-50"
+                        >
+                          Add slot
+                        </button>
+                      </div>
+                    )}
+                    <textarea
+                      rows={2}
+                      value={offerMessage[provider.id] ?? ""}
+                      onChange={(event) =>
+                        setOfferMessage((prev) => ({ ...prev, [provider.id]: event.target.value }))
+                      }
+                      className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm transition focus:border-sky-400 focus:outline-none focus:ring-4 focus:ring-sky-100"
+                      placeholder="Optional message for provider"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => void submitOffer(provider)}
+                      className="w-full rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800"
+                    >
+                      Send offer
+                    </button>
+                  </div>
+                ) : null}
+
+                {offerStatus[provider.id] ? (
+                  <p className="mb-3 text-xs text-slate-600">{offerStatus[provider.id]}</p>
+                ) : null}
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (!eligibleReviewProviderIds.has(provider.id)) return;
+                    setActiveFeedbackProviderId((prev) => (prev === provider.id ? null : provider.id));
+                    void loadProviderReviews(provider.id);
+                  }}
+                  disabled={!eligibleReviewProviderIds.has(provider.id)}
+                  className="rounded-xl border border-slate-300 bg-white px-3 py-1.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {eligibleReviewProviderIds.has(provider.id)
+                    ? activeFeedbackProviderId === provider.id
+                      ? "Close feedback"
+                      : "Give feedback"
+                    : "Feedback after service"}
+                </button>
+
+                {!eligibleReviewProviderIds.has(provider.id) ? (
+                  <p className="mt-2 text-xs text-slate-500">
+                    Feedback is enabled only after your service is completed with this provider.
+                  </p>
+                ) : null}
+
+                {activeFeedbackProviderId === provider.id ? (
+                  <div className="mt-3 space-y-3 rounded-xl border border-slate-200 bg-slate-50/70 p-3.5">
+                    <div>
+                      <p className="mb-1.5 text-sm font-medium text-slate-700">Rate this provider</p>
+                      <div className="flex items-center gap-1">
+                        {[1, 2, 3, 4, 5].map((star) => {
+                          const selected = (feedbackDrafts[provider.id]?.rating ?? 0) >= star;
+                          return (
+                            <button
+                              key={star}
+                              type="button"
+                              onClick={() => updateFeedbackDraft(provider.id, { rating: star })}
+                              className={`rounded p-1 transition ${
+                                selected ? "text-amber-500" : "text-slate-300 hover:text-amber-400"
+                              }`}
+                              aria-label={`Rate ${star} star${star > 1 ? "s" : ""}`}
+                            >
+                              <svg viewBox="0 0 24 24" className="h-5 w-5" fill="currentColor">
+                                <path d="M12 17.3l-6.16 3.24 1.18-6.87L2 8.86l6.92-1.01L12 1.6l3.08 6.25L22 8.86l-5.02 4.81 1.18 6.87z" />
+                              </svg>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="mb-1.5 block text-sm font-medium text-slate-700">
+                        Review
+                      </label>
+                      <textarea
+                        rows={3}
+                        value={feedbackDrafts[provider.id]?.review ?? ""}
+                        onChange={(event) =>
+                          updateFeedbackDraft(provider.id, { review: event.target.value })
+                        }
+                        className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 shadow-sm transition focus:border-sky-400 focus:outline-none focus:ring-4 focus:ring-sky-100"
+                        placeholder="How was the service quality and professionalism?"
+                      />
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => void submitFeedback(provider.id)}
+                      disabled={Boolean(isSubmittingFeedback[provider.id])}
+                      className="w-full rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800"
+                    >
+                      {isSubmittingFeedback[provider.id] ? "Submitting..." : "Submit feedback"}
+                    </button>
+
+                    {(providerReviews[provider.id]?.reviews?.length ?? 0) > 0 ? (
+                      <div className="space-y-2 border-t border-slate-200 pt-2">
+                        <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                          Recent reviews
+                        </p>
+                        {providerReviews[provider.id].reviews.slice(0, 3).map((review, idx) => (
+                          <div key={`${provider.id}-review-${idx}`} className="rounded-lg bg-white p-2">
+                            <p className="text-xs font-medium text-amber-600">
+                              {"★".repeat(review.rating)}{" "}
+                              <span className="text-slate-500">({review.rating}/5)</span>
+                            </p>
+                            <p className="mt-0.5 text-sm text-slate-700">{review.comment}</p>
+                          </div>
+                        ))}
+                      </div>
+                    ) : null}
+                  </div>
+                ) : null}
+
+                {feedbackStatus[provider.id] ? (
+                  <p className="mt-2 text-xs text-slate-600">{feedbackStatus[provider.id]}</p>
+                ) : null}
+              </div>
             </article>
           ))}
         </section>

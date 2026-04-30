@@ -5,6 +5,14 @@ from typing import Literal, NotRequired, TypedDict
 UserRole = Literal["customer", "provider"]
 
 
+class ProviderReview(TypedDict):
+    customer_id: str
+    customer_name: str
+    rating: int
+    comment: str
+    created_at: datetime
+
+
 class UserDocument(TypedDict):
     email: str
     hashed_password: str
@@ -25,6 +33,9 @@ class UserDocument(TypedDict):
     home_age: NotRequired[int]
     family_size: NotRequired[int]
     grooming_cycle_days: NotRequired[int]
+    reviews: NotRequired[list[ProviderReview]]
+    rating_average: NotRequired[float]
+    rating_count: NotRequired[int]
     is_active: bool
     created_at: NotRequired[datetime]
     updated_at: NotRequired[datetime]

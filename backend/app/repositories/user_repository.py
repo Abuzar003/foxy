@@ -122,9 +122,68 @@ class UserRepository:
             "profile_photo": 1,
             "about": 1,
             "age": 1,
+            "rating_average": 1,
+            "rating_count": 1,
         }
         providers = await self.collection.find(query, projection).limit(limit).to_list(length=limit)
         return providers
+
+    async def add_provider_review(
+        self,
+        *,
+        provider_id: str,
+        customer_id: str,
+        customer_name: str,
+        rating: int,
+        comment: str,
+    ) -> Optional[dict]:
+        if not ObjectId.is_valid(provider_id):
+            return None
+
+        provider = await self.collection.find_one({"_id": ObjectId(provider_id), "role": "provider"})
+        if not provider:
+            return None
+
+        review_doc = {
+            "customer_id": customer_id,
+            "customer_name": customer_name,
+            "rating": rating,
+            "comment": comment,
+            "created_at": datetime.now(timezone.utc),
+        }
+        existing_count = int(provider.get("rating_count", 0))
+        existing_avg = float(provider.get("rating_average", 0.0))
+        new_count = existing_count + 1
+        new_avg = ((existing_avg * existing_count) + rating) / new_count
+
+        await self.collection.update_one(
+            {"_id": ObjectId(provider_id), "role": "provider"},
+            {
+                "$push": {"reviews": review_doc},
+                "$set": {
+                    "rating_count": new_count,
+                    "rating_average": round(new_avg, 2),
+                    "updated_at": datetime.now(timezone.utc),
+                },
+            },
+        )
+        return review_doc
+
+    async def get_provider_reviews(self, provider_id: str) -> Optional[dict]:
+        if not ObjectId.is_valid(provider_id):
+            return None
+        provider = await self.collection.find_one(
+            {"_id": ObjectId(provider_id), "role": "provider"},
+            {
+                "_id": 1,
+                "reviews": 1,
+                "rating_average": 1,
+                "rating_count": 1,
+            },
+        )
+        if not provider:
+            return None
+        return provider
 
     @staticmethod
     def to_public_user(doc: dict) -> dict:

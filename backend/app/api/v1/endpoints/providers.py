@@ -1,11 +1,15 @@
 from typing import Annotated, Optional
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 
-from app.api.dependencies import get_user_repository
+from app.api.dependencies import get_current_user, get_user_repository
 from app.core.service_taxonomy import ALL_SERVICES, SERVICE_TAXONOMY
+from app.core.exceptions import NotFoundException, UnauthorizedException
 from app.repositories.user_repository import UserRepository
 from app.schemas.user import (
+    ProviderReviewCreate,
+    ProviderReviewResponse,
+    ProviderReviewsResponse,
     ProviderSearchResponse,
     ProviderSearchResult,
     ServiceTaxonomyResponse,
@@ -62,7 +66,66 @@ async def search_providers(
             profile_photo=doc.get("profile_photo"),
             about=doc.get("about"),
             age=doc.get("age"),
+            rating_average=doc.get("rating_average"),
+            rating_count=doc.get("rating_count", 0),
         )
         for doc in docs
     ]
     return ProviderSearchResponse(providers=providers)
+
+
+@router.post("/{provider_id}/reviews", response_model=ProviderReviewResponse, status_code=status.HTTP_201_CREATED)
+async def add_provider_review(
+    provider_id: str,
+    payload: ProviderReviewCreate,
+    current_user: Annotated[dict, Depends(get_current_user)],
+    user_repo: Annotated[UserRepository, Depends(get_user_repository)],
+) -> ProviderReviewResponse:
+    if current_user.get("role") != "customer":
+        raise UnauthorizedException("Only customers can submit reviews")
+
+    customer = await user_repo.find_by_id(current_user["user_id"])
+    if not customer:
+        raise NotFoundException("Customer not found")
+
+    created = await user_repo.add_provider_review(
+        provider_id=provider_id,
+        customer_id=current_user["user_id"],
+        customer_name=customer.get("full_name", "Customer"),
+        rating=payload.rating,
+        comment=payload.comment,
+    )
+    if not created:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Provider not found",
+        )
+    return ProviderReviewResponse(**created)
+
+
+@router.get("/{provider_id}/reviews", response_model=ProviderReviewsResponse)
+async def get_provider_reviews(
+    provider_id: str,
+    user_repo: Annotated[UserRepository, Depends(get_user_repository)],
+) -> ProviderReviewsResponse:
+    provider = await user_repo.get_provider_reviews(provider_id)
+    if not provider:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Provider not found",
+        )
+
+    reviews = [
+        ProviderReviewResponse(**review)
+        for review in sorted(
+            provider.get("reviews", []),
+            key=lambda item: item.get("created_at"),
+            reverse=True,
+        )
+    ]
+    return ProviderReviewsResponse(
+        provider_id=str(provider["_id"]),
+        rating_average=provider.get("rating_average"),
+        rating_count=provider.get("rating_count", 0),
+        reviews=reviews,
+    )

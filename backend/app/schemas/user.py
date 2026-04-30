@@ -103,10 +103,32 @@ class ProviderSearchResult(BaseModel):
     profile_photo: Optional[str] = None
     about: Optional[str] = None
     age: Optional[int] = None
+    rating_average: Optional[float] = None
+    rating_count: int = 0
 
 
 class ProviderSearchResponse(BaseModel):
     providers: list[ProviderSearchResult]
+
+
+class ProviderReviewCreate(BaseModel):
+    rating: int = Field(ge=1, le=5)
+    comment: str = Field(min_length=2, max_length=1000)
+
+
+class ProviderReviewResponse(BaseModel):
+    customer_id: str
+    customer_name: str
+    rating: int
+    comment: str
+    created_at: datetime
+
+
+class ProviderReviewsResponse(BaseModel):
+    provider_id: str
+    rating_average: Optional[float] = None
+    rating_count: int = 0
+    reviews: list[ProviderReviewResponse] = Field(default_factory=list)
 
 
 class ServiceTaxonomyResponse(BaseModel):

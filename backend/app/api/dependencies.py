@@ -7,6 +7,7 @@ from fastapi.security import OAuth2PasswordBearer
 from app.core.security import decode_access_token
 from app.core.cache import cache
 from app.db.mongodb import mongodb
+from app.repositories.offer_repository import OfferRepository
 from app.repositories.user_repository import UserRepository
 from app.services.auth_service import AuthService
 from app.services.email_service import EmailService
@@ -21,6 +22,10 @@ def get_db():
 
 def get_user_repository(db=Depends(get_db)) -> UserRepository:
     return UserRepository(db)
+
+
+def get_offer_repository(db=Depends(get_db)) -> OfferRepository:
+    return OfferRepository(db)
 
 
 def get_auth_service(

@@ -60,6 +60,8 @@ export function LoginForm({ onFieldFocus, onFieldBlur, onSubmitIntent }: LoginFo
       });
       localStorage.setItem("access_token", response.token.access_token);
       localStorage.setItem("user_role", response.user.role);
+      localStorage.setItem("user_id", response.user.id);
+      localStorage.setItem("user_name", response.user.full_name);
       if (response.user.role === "provider") {
         router.push("/provider/about");
       } else {
