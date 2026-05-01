@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { apiRequest, ApiError } from "@/lib/api";
 
@@ -30,6 +30,14 @@ interface SignupFormProps {
   defaultRole?: Role;
 }
 
+interface TermsAndConditionsResponse {
+  platform: string;
+  sections: Array<{
+    title: string;
+    points: string[];
+  }>;
+}
+
 export function SignupForm({ defaultRole = "customer" }: SignupFormProps) {
   const [isOtpSent, setIsOtpSent] = useState(false);
   const [isPhoneVerified, setIsPhoneVerified] = useState(false);
@@ -40,6 +48,11 @@ export function SignupForm({ defaultRole = "customer" }: SignupFormProps) {
   const [apiError, setApiError] = useState("");
   const [apiSuccess, setApiSuccess] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [customerTerms, setCustomerTerms] = useState<TermsAndConditionsResponse | null>(null);
+  const [providerTerms, setProviderTerms] = useState<TermsAndConditionsResponse | null>(null);
+  const [customerTermsError, setCustomerTermsError] = useState("");
+  const [providerTermsError, setProviderTermsError] = useState("");
+  const [showTerms, setShowTerms] = useState(false);
 
   const {
     register,
@@ -65,6 +78,37 @@ export function SignupForm({ defaultRole = "customer" }: SignupFormProps) {
   const termsAccepted = watch("termsAccepted");
   const isPhoneValid = /^(?:\d{10}|\+[1-9]\d{9,14})$/.test(phone ?? "");
   const canSubmit = isPhoneVerified && Boolean(termsAccepted);
+  const activeTerms = role === "provider" ? providerTerms : customerTerms;
+  const activeTermsError = role === "provider" ? providerTermsError : customerTermsError;
+
+  useEffect(() => {
+    const loadTerms = async () => {
+      const [customerResult, providerResult] = await Promise.allSettled([
+        apiRequest<TermsAndConditionsResponse>("/auth/terms-and-conditions"),
+        apiRequest<TermsAndConditionsResponse>("/auth/provider/terms-and-conditions"),
+      ]);
+
+      if (customerResult.status === "fulfilled") {
+        setCustomerTerms(customerResult.value);
+        setCustomerTermsError("");
+      } else {
+        const reason = customerResult.reason;
+        const message = reason instanceof ApiError ? reason.message : "Failed to load user terms and conditions.";
+        setCustomerTermsError(message);
+      }
+
+      if (providerResult.status === "fulfilled") {
+        setProviderTerms(providerResult.value);
+        setProviderTermsError("");
+      } else {
+        const reason = providerResult.reason;
+        const message =
+          reason instanceof ApiError ? reason.message : "Failed to load provider terms and conditions.";
+        setProviderTermsError(message);
+      }
+    };
+    void loadTerms();
+  }, []);
 
   const onSubmit = async (data: SignupPayload) => {
     try {
@@ -396,19 +440,78 @@ export function SignupForm({ defaultRole = "customer" }: SignupFormProps) {
           />
           <span className="text-sm leading-5 text-slate-500">
             I agree to the{" "}
-            <a href="#" className="font-medium text-slate-600 underline decoration-slate-300 underline-offset-2 hover:text-slate-900">
-              Terms &amp; Conditions
-            </a>{" "}
+            <button
+              type="button"
+              onClick={(event) => {
+                event.preventDefault();
+                event.stopPropagation();
+                setShowTerms(true);
+              }}
+              className="font-medium text-slate-600 underline decoration-slate-300 underline-offset-2 hover:text-slate-900"
+            >
+              {role === "provider" ? "Provider Terms & Conditions" : "Terms & Conditions"}
+            </button>{" "}
             and{" "}
-            <a href="#" className="font-medium text-slate-600 underline decoration-slate-300 underline-offset-2 hover:text-slate-900">
-              Privacy Policy
-            </a>
+            <button
+              type="button"
+              onClick={(event) => {
+                event.preventDefault();
+                event.stopPropagation();
+                setShowTerms(true);
+              }}
+              className="font-medium text-slate-600 underline decoration-slate-300 underline-offset-2 hover:text-slate-900"
+            >
+              {role === "provider" ? "Provider Policy" : "Privacy Policy"}
+            </button>
           </span>
         </label>
+        <button
+          type="button"
+          onClick={() => setShowTerms(true)}
+          className="mt-1 text-xs font-medium text-slate-600 underline decoration-slate-300 underline-offset-2 hover:text-slate-900"
+        >
+          View full {role === "provider" ? "provider" : "user"} terms
+        </button>
         {errors.termsAccepted ? (
           <p className="mt-1 text-xs text-rose-500">{errors.termsAccepted.message}</p>
         ) : null}
       </div>
+
+      {showTerms ? (
+        <div className="max-h-64 space-y-3 overflow-y-auto rounded-xl border border-slate-200 bg-slate-50/70 p-3.5 text-sm text-slate-700">
+          <div className="flex items-center justify-between">
+            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+              {role === "provider" ? "Provider Terms" : "User Terms"}
+            </p>
+            <button
+              type="button"
+              onClick={() => setShowTerms(false)}
+              className="text-xs font-medium text-slate-500 hover:text-slate-900"
+            >
+              Close
+            </button>
+          </div>
+          {activeTerms ? (
+            <>
+              <p className="font-semibold text-slate-900">{activeTerms.platform}</p>
+              {activeTerms.sections.map((section) => (
+                <div key={section.title}>
+                  <p className="font-medium text-slate-900">{section.title}</p>
+                  <ul className="mt-1 list-disc space-y-1 pl-5 text-slate-600">
+                    {section.points.map((point) => (
+                      <li key={`${section.title}-${point}`}>{point}</li>
+                    ))}
+                  </ul>
+                </div>
+              ))}
+            </>
+          ) : activeTermsError ? (
+            <p className="text-rose-600">{activeTermsError}</p>
+          ) : (
+            <p className="text-slate-500">Loading terms and conditions...</p>
+          )}
+        </div>
+      ) : null}
 
       <button
         type="submit"

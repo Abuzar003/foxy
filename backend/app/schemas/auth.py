@@ -30,6 +30,16 @@ class CustomerMobileResponse(BaseModel):
     phone: str
 
 
+class TermsSection(BaseModel):
+    title: str
+    points: list[str]
+
+
+class TermsAndConditionsResponse(BaseModel):
+    platform: str
+    sections: list[TermsSection]
+
+
 class VerifyOTPResponse(BaseModel):
     message: str
     reset_token: str

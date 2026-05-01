@@ -1,4 +1,4 @@
-import { apiRequest } from "@/lib/api";
+import { apiRequest, ApiError } from "@/lib/api";
 
 export interface OfferMessage {
   sender_id: string;
@@ -12,7 +12,18 @@ interface OfferMessagesResponse {
   messages: OfferMessage[];
 }
 
+function resolveAuthToken(token?: string) {
+  const resolved =
+    token ??
+    (typeof window !== "undefined" ? localStorage.getItem("access_token") : null);
+  if (!resolved || resolved === "undefined" || resolved === "null") {
+    throw new ApiError("Missing access token. Please login again.", 401);
+  }
+  return resolved;
+}
+
 export async function getOfferMessages(offerId: string, token: string, before?: string, limit = 50) {
+  const authToken = resolveAuthToken(token);
   const params = new URLSearchParams();
   if (before) params.set("before", before);
   params.set("limit", String(limit));
@@ -23,7 +34,7 @@ export async function getOfferMessages(offerId: string, token: string, before?: 
     {
       method: "GET",
       headers: {
-        Authorization: `Bearer ${token}`,
+        Authorization: `Bearer ${authToken}`,
       },
     },
   );
@@ -31,10 +42,11 @@ export async function getOfferMessages(offerId: string, token: string, before?: 
 }
 
 export async function sendOfferMessage(offerId: string, text: string, token: string) {
+  const authToken = resolveAuthToken(token);
   return apiRequest<OfferMessage>(`/offers/${offerId}/messages`, {
     method: "POST",
     headers: {
-      Authorization: `Bearer ${token}`,
+      Authorization: `Bearer ${authToken}`,
     },
     body: { text },
   });

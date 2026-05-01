@@ -1,4 +1,4 @@
-import { apiRequest } from "@/lib/api";
+import { apiRequest, ApiError } from "@/lib/api";
 
 export type OfferStatus = "pending" | "accepted" | "rejected";
 export type OfferScheduleType = "single" | "multi";
@@ -40,6 +40,16 @@ export interface OfferInboxResponse {
   total_count: number;
 }
 
+function resolveAuthToken(token?: string) {
+  const resolved =
+    token ??
+    (typeof window !== "undefined" ? localStorage.getItem("access_token") : null);
+  if (!resolved || resolved === "undefined" || resolved === "null") {
+    throw new ApiError("Missing access token. Please login again.", 401);
+  }
+  return resolved;
+}
+
 interface CreateOfferSinglePayload {
   provider_id: string;
   service: string;
@@ -67,30 +77,33 @@ interface CreateOfferMultiPayload {
 export type CreateOfferPayload = CreateOfferSinglePayload | CreateOfferMultiPayload;
 
 export async function createOffer(payload: CreateOfferPayload, token: string) {
+  const authToken = resolveAuthToken(token);
   return apiRequest<ServiceOffer>("/offers", {
     method: "POST",
-    headers: { Authorization: `Bearer ${token}` },
+    headers: { Authorization: `Bearer ${authToken}` },
     body: payload,
   });
 }
 
 export async function getCustomerOffers(status?: OfferStatus, token?: string) {
+  const authToken = resolveAuthToken(token);
   const params = new URLSearchParams();
   if (status) params.set("status", status);
   const query = params.toString();
   return apiRequest<OfferInboxResponse>(`/offers/customer${query ? `?${query}` : ""}`, {
     method: "GET",
-    headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+    headers: { Authorization: `Bearer ${authToken}` },
   });
 }
 
 export async function getProviderOffers(status?: OfferStatus, token?: string) {
+  const authToken = resolveAuthToken(token);
   const params = new URLSearchParams();
   if (status) params.set("status", status);
   const query = params.toString();
   return apiRequest<OfferInboxResponse>(`/offers/provider${query ? `?${query}` : ""}`, {
     method: "GET",
-    headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+    headers: { Authorization: `Bearer ${authToken}` },
   });
 }
 
@@ -100,9 +113,10 @@ export async function updateOfferStatus(
   token: string,
   providerReply?: string,
 ) {
+  const authToken = resolveAuthToken(token);
   return apiRequest<ServiceOffer>(`/offers/${offerId}/status`, {
     method: "PATCH",
-    headers: { Authorization: `Bearer ${token}` },
+    headers: { Authorization: `Bearer ${authToken}` },
     body: {
       status,
       provider_reply: providerReply?.trim() || undefined,

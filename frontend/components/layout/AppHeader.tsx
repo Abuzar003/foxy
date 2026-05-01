@@ -55,7 +55,7 @@ export function AppHeader() {
     <header className="sticky top-0 z-40 border-b border-slate-200/80 bg-white/80 backdrop-blur">
       <div className="mx-auto flex h-14 w-full max-w-6xl items-center justify-between px-4 sm:px-6">
         <Link href={role === "provider" ? "/provider/about" : "/providers/search"} className="text-sm font-semibold tracking-tight text-slate-900">
-          ProLink
+          Haazir
         </Link>
 
         <div className="flex items-center gap-2">

@@ -12,7 +12,7 @@ class Settings(BaseSettings):
         extra="ignore",
     )
 
-    app_name: str = "urban-auth-service"
+    app_name: str = "Haazir"
     api_v1_prefix: str = "/api/v1"
 
     mongodb_uri: str = "mongodb://localhost:27017"
