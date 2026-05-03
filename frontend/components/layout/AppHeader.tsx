@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { getCustomerOffers, getProviderOffers } from "@/lib/offers";
 import { ThemeToggle } from "@/components/theme/ThemeToggle";
+import { AUTH_CHANGED_EVENT } from "@/lib/auth-events";
 
 type UserRole = "customer" | "provider" | null;
 
@@ -15,34 +16,44 @@ export function AppHeader() {
   const [inboxCount, setInboxCount] = useState(0);
 
   useEffect(() => {
-    const storedRole = localStorage.getItem("user_role");
-    const storedToken = localStorage.getItem("access_token");
+    const sync = () => {
+      const storedRole = localStorage.getItem("user_role");
+      const storedToken = localStorage.getItem("access_token");
 
-    if (storedRole === "customer" || storedRole === "provider") {
-      setRole(storedRole);
-    } else {
-      setRole(null);
-    }
-    setToken(storedToken);
-
-    const loadInboxCount = async () => {
-      if (!storedToken || (storedRole !== "customer" && storedRole !== "provider")) {
-        setInboxCount(0);
-        return;
+      if (storedRole === "customer" || storedRole === "provider") {
+        setRole(storedRole);
+      } else {
+        setRole(null);
       }
-      try {
-        if (storedRole === "provider") {
-          const inbox = await getProviderOffers(undefined, storedToken);
-          setInboxCount(inbox.pending_count);
-        } else {
-          const inbox = await getCustomerOffers(undefined, storedToken);
-          setInboxCount(inbox.total_count);
+      setToken(storedToken);
+
+      const loadInboxCount = async () => {
+        if (!storedToken || (storedRole !== "customer" && storedRole !== "provider")) {
+          setInboxCount(0);
+          return;
         }
-      } catch {
-        setInboxCount(0);
-      }
+        try {
+          if (storedRole === "provider") {
+            const inbox = await getProviderOffers(undefined, storedToken);
+            setInboxCount(inbox.pending_count);
+          } else {
+            const inbox = await getCustomerOffers(undefined, storedToken);
+            setInboxCount(inbox.total_count);
+          }
+        } catch {
+          setInboxCount(0);
+        }
+      };
+      void loadInboxCount();
     };
-    void loadInboxCount();
+
+    sync();
+    window.addEventListener("storage", sync);
+    window.addEventListener(AUTH_CHANGED_EVENT, sync);
+    return () => {
+      window.removeEventListener("storage", sync);
+      window.removeEventListener(AUTH_CHANGED_EVENT, sync);
+    };
   }, [pathname]);
 
   const isLoggedIn = Boolean(token && role);

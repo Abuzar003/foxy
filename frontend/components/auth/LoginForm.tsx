@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { apiRequest, ApiError } from "@/lib/api";
+import { notifyAuthChanged } from "@/lib/auth-events";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
@@ -84,6 +85,8 @@ export function LoginForm({
       localStorage.setItem("user_role", response.user.role);
       localStorage.setItem("user_id", response.user.id);
       localStorage.setItem("user_name", response.user.full_name);
+      notifyAuthChanged();
+      router.refresh();
       if (response.user.role === "provider") {
         router.push("/provider/about");
       } else {

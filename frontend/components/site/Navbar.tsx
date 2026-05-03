@@ -1,10 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { Sparkles, Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/theme/ThemeToggle";
+import { AUTH_CHANGED_EVENT, notifyAuthChanged } from "@/lib/auth-events";
+
+type UserRole = "customer" | "provider" | null;
 
 const links = [
   { href: "#services", label: "Services" },
@@ -16,6 +19,15 @@ const links = [
 const Navbar = () => {
   const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);
+  const [role, setRole] = useState<UserRole>(null);
+  const [token, setToken] = useState<string | null>(null);
+
+  const rehydrateAuth = useCallback(() => {
+    const storedRole = localStorage.getItem("user_role");
+    const storedToken = localStorage.getItem("access_token");
+    setToken(storedToken);
+    setRole(storedRole === "customer" || storedRole === "provider" ? storedRole : null);
+  }, []);
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 12);
@@ -23,6 +35,29 @@ const Navbar = () => {
     window.addEventListener("scroll", onScroll);
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
+
+  useEffect(() => {
+    rehydrateAuth();
+    window.addEventListener("storage", rehydrateAuth);
+    window.addEventListener(AUTH_CHANGED_EVENT, rehydrateAuth);
+    return () => {
+      window.removeEventListener("storage", rehydrateAuth);
+      window.removeEventListener(AUTH_CHANGED_EVENT, rehydrateAuth);
+    };
+  }, [rehydrateAuth]);
+
+  const isLoggedIn = Boolean(token && role);
+
+  const logout = () => {
+    localStorage.removeItem("access_token");
+    localStorage.removeItem("user_role");
+    localStorage.removeItem("user_id");
+    localStorage.removeItem("user_name");
+    setToken(null);
+    setRole(null);
+    notifyAuthChanged();
+    setOpen(false);
+  };
 
   return (
     <header
@@ -50,12 +85,36 @@ const Navbar = () => {
 
         <div className="hidden md:flex items-center gap-3">
           <ThemeToggle />
-          <Button asChild variant="ghost" className="text-foreground hover:text-primary">
-            <Link href="/auth/signup/provider">Become a Provider</Link>
-          </Button>
-          <Button asChild className="bg-gold-gradient text-primary-foreground hover:opacity-90 shadow-gold font-semibold">
-            <Link href="/auth/signup/customer">Book Now</Link>
-          </Button>
+          {isLoggedIn ? (
+            <>
+              <Button asChild variant="ghost" className="text-foreground hover:text-primary">
+                <Link href={role === "provider" ? "/provider/about" : "/providers/search"}>
+                  {role === "provider" ? "Dashboard" : "Browse"}
+                </Link>
+              </Button>
+              <Button asChild variant="ghost" className="text-foreground hover:text-primary">
+                <Link href={role === "provider" ? "/inbox/provider" : "/inbox/customer"}>Inbox</Link>
+              </Button>
+              <Button asChild variant="outline" className="border-border">
+                <Link href={role === "provider" ? "/provider/about" : "/customer/about"}>Account</Link>
+              </Button>
+              <Button type="button" variant="ghost" className="text-muted-foreground hover:text-foreground" onClick={logout}>
+                Log out
+              </Button>
+            </>
+          ) : (
+            <>
+              <Button asChild variant="ghost" className="text-foreground hover:text-primary">
+                <Link href="/auth/login">Log in</Link>
+              </Button>
+              <Button asChild variant="ghost" className="text-foreground hover:text-primary">
+                <Link href="/auth/signup/provider">Become a Provider</Link>
+              </Button>
+              <Button asChild className="bg-gold-gradient text-primary-foreground hover:opacity-90 shadow-gold font-semibold">
+                <Link href="/auth/signup/customer">Book Now</Link>
+              </Button>
+            </>
+          )}
         </div>
 
         <div className="flex items-center gap-1 md:hidden">
@@ -76,17 +135,49 @@ const Navbar = () => {
                 </a>
               </li>
             ))}
-            <li className="flex gap-3 pt-2">
-              <Button asChild variant="outline" className="flex-1">
-                <Link href="/auth/signup/provider" onClick={() => setOpen(false)}>
-                  Provider
-                </Link>
-              </Button>
-              <Button asChild className="flex-1 bg-gold-gradient text-primary-foreground font-semibold">
-                <Link href="/auth/signup/customer" onClick={() => setOpen(false)}>
-                  Book Now
-                </Link>
-              </Button>
+            <li className="flex flex-col gap-2 pt-2">
+              {isLoggedIn ? (
+                <>
+                  <Button asChild variant="outline" className="w-full">
+                    <Link href={role === "provider" ? "/provider/about" : "/providers/search"} onClick={() => setOpen(false)}>
+                      {role === "provider" ? "Dashboard" : "Browse services"}
+                    </Link>
+                  </Button>
+                  <Button asChild variant="outline" className="w-full">
+                    <Link href={role === "provider" ? "/inbox/provider" : "/inbox/customer"} onClick={() => setOpen(false)}>
+                      Inbox
+                    </Link>
+                  </Button>
+                  <Button asChild variant="outline" className="w-full">
+                    <Link href={role === "provider" ? "/provider/about" : "/customer/about"} onClick={() => setOpen(false)}>
+                      Account
+                    </Link>
+                  </Button>
+                  <Button type="button" variant="ghost" className="w-full text-muted-foreground" onClick={logout}>
+                    Log out
+                  </Button>
+                </>
+              ) : (
+                <div className="flex flex-col gap-2">
+                  <Button asChild variant="outline" className="w-full">
+                    <Link href="/auth/login" onClick={() => setOpen(false)}>
+                      Log in
+                    </Link>
+                  </Button>
+                  <div className="flex gap-3">
+                    <Button asChild variant="outline" className="flex-1">
+                      <Link href="/auth/signup/provider" onClick={() => setOpen(false)}>
+                        Provider
+                      </Link>
+                    </Button>
+                    <Button asChild className="flex-1 bg-gold-gradient text-primary-foreground font-semibold">
+                      <Link href="/auth/signup/customer" onClick={() => setOpen(false)}>
+                        Book Now
+                      </Link>
+                    </Button>
+                  </div>
+                </div>
+              )}
             </li>
           </ul>
         </div>
