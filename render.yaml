@@ -1,0 +1,18 @@
+# Render Blueprint: backend API (Docker).
+# New → Blueprint → connect this GitHub repo, then set secret env vars in the dashboard.
+
+services:
+  - type: web
+    name: pro-link-backend
+    runtime: docker
+    plan: free
+    dockerfilePath: backend/Dockerfile
+    dockerContext: backend
+    healthCheckPath: /health
+    envVars:
+      - key: MONGODB_URI
+        sync: false
+      - key: MONGODB_DB_NAME
+        value: urban_auth
+      - key: JWT_SECRET_KEY
+        generateValue: true
