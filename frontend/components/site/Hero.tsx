@@ -1,7 +1,5 @@
-import Link from "next/link";
-import { Search, MapPin, Star, ShieldCheck, Clock } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Star, ShieldCheck, Clock } from "lucide-react";
+import { HeroBookBar } from "@/components/site/HeroBookBar";
 
 const Hero = () => {
   return (
@@ -29,24 +27,7 @@ const Hero = () => {
             Book electricians, plumbers, gardeners, drivers, painters and more — instantly or whenever you need.
           </p>
 
-          <div className="mt-10 mx-auto max-w-3xl rounded-2xl bg-card-gradient border border-border p-3 shadow-soft">
-            <div className="grid gap-3 md:grid-cols-[1.4fr_1fr_auto]">
-              <div className="relative">
-                <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="What service do you need?"
-                  className="h-12 pl-11 bg-muted/60 border-border focus-visible:ring-primary"
-                />
-              </div>
-              <div className="relative">
-                <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-teal" />
-                <Input placeholder="Your city" className="h-12 pl-11 bg-muted/60 border-border focus-visible:ring-primary" />
-              </div>
-              <Button asChild size="lg" className="h-12 px-8 bg-gold-gradient text-primary-foreground hover:opacity-90 shadow-gold font-semibold">
-                <Link href="/auth/login">Find a Pro</Link>
-              </Button>
-            </div>
-          </div>
+          <HeroBookBar />
 
           <div className="mt-8 flex flex-wrap items-center justify-center gap-x-8 gap-y-3 text-sm text-muted-foreground">
             <span className="flex items-center gap-2">
