@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { Search, MapPin, Star, ShieldCheck, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -41,8 +42,8 @@ const Hero = () => {
                 <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-teal" />
                 <Input placeholder="Your city" className="h-12 pl-11 bg-muted/60 border-border focus-visible:ring-primary" />
               </div>
-              <Button size="lg" className="h-12 px-8 bg-gold-gradient text-primary-foreground hover:opacity-90 shadow-gold font-semibold">
-                Find a Pro
+              <Button asChild size="lg" className="h-12 px-8 bg-gold-gradient text-primary-foreground hover:opacity-90 shadow-gold font-semibold">
+                <Link href="/auth/login">Find a Pro</Link>
               </Button>
             </div>
           </div>

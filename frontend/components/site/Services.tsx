@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { Car, Home, Package, Users, Shield, ArrowRight } from "lucide-react";
 
 const services = [
@@ -28,8 +29,9 @@ const Services = () => {
 
         <div className="mt-12 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 md:gap-5">
           {services.map(({ icon: Icon, name, blurb }) => (
-            <button
+            <Link
               key={name}
+              href="/auth/login"
               className="group relative text-left rounded-2xl border border-border bg-card-gradient p-5 transition-smooth hover:border-teal hover:shadow-teal hover:-translate-y-1"
             >
               <div className="flex items-center justify-between">
@@ -40,14 +42,14 @@ const Services = () => {
               </div>
               <h3 className="mt-5 font-semibold text-foreground leading-snug">{name}</h3>
               <p className="mt-1 text-sm text-muted-foreground">{blurb}</p>
-            </button>
+            </Link>
           ))}
         </div>
 
         <div className="mt-10 text-center">
-          <a href="#" className="inline-flex items-center gap-2 text-teal hover:text-teal-glow font-medium">
+          <Link href="/auth/login" className="inline-flex items-center gap-2 text-teal hover:text-teal-glow font-medium">
             View all services <ArrowRight className="h-4 w-4" />
-          </a>
+          </Link>
         </div>
       </div>
     </section>
