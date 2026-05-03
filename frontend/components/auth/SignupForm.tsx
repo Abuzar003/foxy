@@ -28,6 +28,8 @@ export type SignupPayload = CustomerSignupPayload | ProviderSignupPayload;
 
 interface SignupFormProps {
   defaultRole?: Role;
+  /** When set, the role toggle is hidden and this role is fixed (use dedicated signup URLs). */
+  lockedRole?: Role;
 }
 
 interface TermsAndConditionsResponse {
@@ -38,7 +40,8 @@ interface TermsAndConditionsResponse {
   }>;
 }
 
-export function SignupForm({ defaultRole = "customer" }: SignupFormProps) {
+export function SignupForm({ defaultRole = "customer", lockedRole }: SignupFormProps) {
+  const initialRole = lockedRole ?? defaultRole;
   const [isOtpSent, setIsOtpSent] = useState(false);
   const [isPhoneVerified, setIsPhoneVerified] = useState(false);
   const [isSendingOtp, setIsSendingOtp] = useState(false);
@@ -67,7 +70,7 @@ export function SignupForm({ defaultRole = "customer" }: SignupFormProps) {
       email: "",
       phone: "",
       password: "",
-      role: defaultRole,
+      role: initialRole,
       termsAccepted: false,
       serviceCategory: "",
     },
@@ -83,49 +86,65 @@ export function SignupForm({ defaultRole = "customer" }: SignupFormProps) {
 
   useEffect(() => {
     const loadTerms = async () => {
-      const [customerResult, providerResult] = await Promise.allSettled([
-        apiRequest<TermsAndConditionsResponse>("/auth/terms-and-conditions"),
-        apiRequest<TermsAndConditionsResponse>("/auth/provider/terms-and-conditions"),
-      ]);
+      const needCustomer = !lockedRole || lockedRole === "customer";
+      const needProvider = !lockedRole || lockedRole === "provider";
 
-      if (customerResult.status === "fulfilled") {
-        setCustomerTerms(customerResult.value);
-        setCustomerTermsError("");
-      } else {
-        const reason = customerResult.reason;
-        const message = reason instanceof ApiError ? reason.message : "Failed to load user terms and conditions.";
-        setCustomerTermsError(message);
+      const tasks: Promise<void>[] = [];
+
+      if (needCustomer) {
+        tasks.push(
+          (async () => {
+            try {
+              const value = await apiRequest<TermsAndConditionsResponse>("/auth/terms-and-conditions");
+              setCustomerTerms(value);
+              setCustomerTermsError("");
+            } catch (reason) {
+              const message =
+                reason instanceof ApiError ? reason.message : "Failed to load user terms and conditions.";
+              setCustomerTermsError(message);
+            }
+          })(),
+        );
       }
 
-      if (providerResult.status === "fulfilled") {
-        setProviderTerms(providerResult.value);
-        setProviderTermsError("");
-      } else {
-        const reason = providerResult.reason;
-        const message =
-          reason instanceof ApiError ? reason.message : "Failed to load provider terms and conditions.";
-        setProviderTermsError(message);
+      if (needProvider) {
+        tasks.push(
+          (async () => {
+            try {
+              const value = await apiRequest<TermsAndConditionsResponse>("/auth/provider/terms-and-conditions");
+              setProviderTerms(value);
+              setProviderTermsError("");
+            } catch (reason) {
+              const message =
+                reason instanceof ApiError ? reason.message : "Failed to load provider terms and conditions.";
+              setProviderTermsError(message);
+            }
+          })(),
+        );
       }
+
+      await Promise.all(tasks);
     };
     void loadTerms();
-  }, []);
+  }, [lockedRole]);
 
   const onSubmit = async (data: SignupPayload) => {
     try {
       setApiError("");
       setApiSuccess("");
 
+      const role = lockedRole ?? data.role;
       const payload = {
         email: data.email,
         password: data.password,
         full_name: `${data.firstName} ${data.lastName}`.trim(),
         phone: data.phone,
         terms_accepted: data.termsAccepted,
-        role: data.role,
-        ...(data.role === "provider" ? { service_category: data.serviceCategory } : {}),
+        role,
+        ...(role === "provider" ? { service_category: data.serviceCategory } : {}),
       };
 
-      const endpoint = data.role === "provider" ? "/auth/register/provider" : "/auth/register/customer";
+      const endpoint = role === "provider" ? "/auth/register/provider" : "/auth/register/customer";
       await apiRequest(endpoint, {
         method: "POST",
         body: payload,
@@ -189,32 +208,34 @@ export function SignupForm({ defaultRole = "customer" }: SignupFormProps) {
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-      <div className="rounded-xl bg-slate-100 p-1">
-        <div className="grid grid-cols-2 gap-1">
-          <button
-            type="button"
-            onClick={() => setValue("role", "customer", { shouldValidate: true })}
-            className={`rounded-lg px-3 py-2 text-sm font-medium transition ${
-              role === "customer"
-                ? "bg-white text-slate-900 shadow-sm"
-                : "text-slate-600 hover:text-slate-900"
-            }`}
-          >
-            Customer
-          </button>
-          <button
-            type="button"
-            onClick={() => setValue("role", "provider", { shouldValidate: true })}
-            className={`rounded-lg px-3 py-2 text-sm font-medium transition ${
-              role === "provider"
-                ? "bg-white text-slate-900 shadow-sm"
-                : "text-slate-600 hover:text-slate-900"
-            }`}
-          >
-            Provider
-          </button>
+      {!lockedRole ? (
+        <div className="rounded-xl bg-slate-100 p-1">
+          <div className="grid grid-cols-2 gap-1">
+            <button
+              type="button"
+              onClick={() => setValue("role", "customer", { shouldValidate: true })}
+              className={`rounded-lg px-3 py-2 text-sm font-medium transition ${
+                role === "customer"
+                  ? "bg-white text-slate-900 shadow-sm"
+                  : "text-slate-600 hover:text-slate-900"
+              }`}
+            >
+              Customer
+            </button>
+            <button
+              type="button"
+              onClick={() => setValue("role", "provider", { shouldValidate: true })}
+              className={`rounded-lg px-3 py-2 text-sm font-medium transition ${
+                role === "provider"
+                  ? "bg-white text-slate-900 shadow-sm"
+                  : "text-slate-600 hover:text-slate-900"
+              }`}
+            >
+              Provider
+            </button>
+          </div>
         </div>
-      </div>
+      ) : null}
 
       <input type="hidden" {...register("role", { required: true })} />
 

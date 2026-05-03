@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { Sparkles, Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -47,11 +48,11 @@ const Navbar = () => {
         </ul>
 
         <div className="hidden md:flex items-center gap-3">
-          <Button variant="ghost" className="text-foreground hover:text-primary">
-            Become a Provider
+          <Button asChild variant="ghost" className="text-foreground hover:text-primary">
+            <Link href="/auth/signup/provider">Become a Provider</Link>
           </Button>
-          <Button className="bg-gold-gradient text-primary-foreground hover:opacity-90 shadow-gold font-semibold">
-            Book Now
+          <Button asChild className="bg-gold-gradient text-primary-foreground hover:opacity-90 shadow-gold font-semibold">
+            <Link href="/auth/signup/customer">Book Now</Link>
           </Button>
         </div>
 
@@ -71,10 +72,16 @@ const Navbar = () => {
               </li>
             ))}
             <li className="flex gap-3 pt-2">
-              <Button variant="outline" className="flex-1">
-                Provider
+              <Button asChild variant="outline" className="flex-1">
+                <Link href="/auth/signup/provider" onClick={() => setOpen(false)}>
+                  Provider
+                </Link>
               </Button>
-              <Button className="flex-1 bg-gold-gradient text-primary-foreground font-semibold">Book Now</Button>
+              <Button asChild className="flex-1 bg-gold-gradient text-primary-foreground font-semibold">
+                <Link href="/auth/signup/customer" onClick={() => setOpen(false)}>
+                  Book Now
+                </Link>
+              </Button>
             </li>
           </ul>
         </div>

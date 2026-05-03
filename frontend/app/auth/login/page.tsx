@@ -17,8 +17,14 @@ export default function LoginPage() {
           </div>
           <p className="mt-6 text-center text-sm text-slate-600">
             New here?{" "}
-            <Link href="/auth/signup" className="font-medium text-slate-900 hover:text-sky-700">
-              Create an account
+            <Link href="/auth/signup/customer" className="font-medium text-slate-900 hover:text-sky-700">
+              Create a customer account
+            </Link>
+          </p>
+          <p className="mt-2 text-center text-sm text-slate-500">
+            Pro on Haazir?{" "}
+            <Link href="/auth/signup/provider" className="font-medium text-slate-800 hover:text-sky-700">
+              Create a provider account
             </Link>
           </p>
         </div>
