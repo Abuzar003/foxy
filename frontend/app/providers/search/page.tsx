@@ -1,15 +1,32 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useRef, useState } from "react";
+import { useSearchParams } from "next/navigation";
+import { MapPin, Search } from "lucide-react";
 import { apiRequest, ApiError } from "@/lib/api";
 import { getLocalDateInputString, getOfferIANATimezone, normalizeOfferDateString } from "@/lib/clientTimezone";
 import { createOffer, getCustomerOffers } from "@/lib/offers";
 import { AuthShell } from "@/components/auth/AuthShell";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { useDebouncedValue } from "@/hooks/useDebouncedValue";
+import {
+  fetchCityMatches,
+  fetchServiceSuggestions,
+  type CityRow,
+  type ServiceSuggestion,
+} from "@/lib/searchApi";
 
 const linkClass = "font-medium text-primary transition-smooth hover:opacity-90";
+const SEARCH_DEBOUNCE_MS = 280;
+
+function categoryForCatalogService(taxonomy: Record<string, string[]>, catalogService: string): string {
+  for (const [cat, list] of Object.entries(taxonomy)) {
+    if (list.includes(catalogService)) return cat;
+  }
+  return "";
+}
 
 const inputClass =
   "w-full rounded-xl border border-border bg-muted/50 px-4 py-2.5 text-sm text-foreground shadow-sm transition-smooth focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background";
@@ -58,10 +75,14 @@ interface ProviderReviewsResponse {
   reviews: ProviderReview[];
 }
 
-export default function ProviderSearchPage() {
+function ProviderSearchInner() {
+  const searchParams = useSearchParams();
+  const filtersWrapRef = useRef<HTMLDivElement>(null);
+
   const [taxonomy, setTaxonomy] = useState<Record<string, string[]>>({});
   const [category, setCategory] = useState("");
   const [service, setService] = useState("");
+  const [serviceNeedInput, setServiceNeedInput] = useState("");
   const [address, setAddress] = useState("");
   const [maxPricePerHour, setMaxPricePerHour] = useState("");
   const [maxPricePerDay, setMaxPricePerDay] = useState("");
@@ -86,6 +107,13 @@ export default function ProviderSearchPage() {
     Record<string, Array<{ date: string; start_time: string; end_time: string }>>
   >({});
   const [eligibleReviewProviderIds, setEligibleReviewProviderIds] = useState<Set<string>>(new Set());
+
+  const debouncedServiceNeed = useDebouncedValue(serviceNeedInput, SEARCH_DEBOUNCE_MS);
+  const debouncedAddress = useDebouncedValue(address, SEARCH_DEBOUNCE_MS);
+  const [serviceSuggestions, setServiceSuggestions] = useState<ServiceSuggestion[]>([]);
+  const [cityMatches, setCityMatches] = useState<CityRow[]>([]);
+  const [serviceSuggestOpen, setServiceSuggestOpen] = useState(false);
+  const [citySuggestOpen, setCitySuggestOpen] = useState(false);
 
   const timeOptions = useMemo(() => {
     const slots: Array<{ value: string; label: string }> = [];
@@ -114,24 +142,77 @@ export default function ProviderSearchPage() {
     void loadTaxonomy();
   }, []);
 
-  const servicesForCategory = useMemo(() => {
-    if (!category) return [];
-    return taxonomy[category] ?? [];
-  }, [category, taxonomy]);
+  useEffect(() => {
+    void (async () => {
+      setServiceSuggestions(await fetchServiceSuggestions(debouncedServiceNeed, 5));
+    })();
+  }, [debouncedServiceNeed]);
 
   useEffect(() => {
-    setService("");
-  }, [category]);
+    void (async () => {
+      setCityMatches(await fetchCityMatches(debouncedAddress, 50));
+    })();
+  }, [debouncedAddress]);
 
-  const searchProviders = async () => {
+  useEffect(() => {
+    const onDoc = (e: MouseEvent) => {
+      if (filtersWrapRef.current && !filtersWrapRef.current.contains(e.target as Node)) {
+        setServiceSuggestOpen(false);
+        setCitySuggestOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", onDoc);
+    return () => document.removeEventListener("mousedown", onDoc);
+  }, []);
+
+  const initialSearchDoneRef = useRef(false);
+
+  const searchProviders = async (
+    direct?: Partial<{ service: string; category: string; address: string }>,
+  ) => {
     try {
       setIsSearching(true);
       setError("");
 
+      let svcParam = "";
+      let catParam = "";
+      let addrParam = address.trim();
+
+      const usedDirect =
+        direct &&
+        (direct.service !== undefined || direct.category !== undefined || direct.address !== undefined);
+
+      if (usedDirect) {
+        svcParam = direct.service ?? "";
+        catParam = direct.category ?? "";
+        if (direct.address !== undefined) addrParam = direct.address.trim();
+        setService(svcParam);
+        setCategory(catParam);
+      } else {
+        const typed = serviceNeedInput.trim();
+        if (!typed) {
+          svcParam = "";
+          catParam = "";
+        } else {
+          const flat = Object.values(taxonomy).flat();
+          const exact =
+            flat.find((s) => s === typed) ?? flat.find((s) => s.toLowerCase() === typed.toLowerCase());
+          if (!exact) {
+            setError("Pick a service from the suggestions, or clear the field to browse all providers.");
+            setIsSearching(false);
+            return;
+          }
+          svcParam = exact;
+          catParam = categoryForCatalogService(taxonomy, exact);
+        }
+        setService(svcParam);
+        setCategory(catParam);
+      }
+
       const params = new URLSearchParams();
-      if (service) params.set("service", service);
-      if (category) params.set("category", category);
-      if (address.trim()) params.set("address", address.trim());
+      if (svcParam) params.set("service", svcParam);
+      if (catParam) params.set("category", catParam);
+      if (addrParam.length >= 2) params.set("address", addrParam);
       if (maxPricePerHour.trim()) params.set("max_price_per_hour", maxPricePerHour.trim());
       if (maxPricePerDay.trim()) params.set("max_price_per_day", maxPricePerDay.trim());
       params.set("limit", "20");
@@ -150,9 +231,22 @@ export default function ProviderSearchPage() {
   };
 
   useEffect(() => {
-    void searchProviders();
+    if (Object.keys(taxonomy).length === 0) return;
+    if (initialSearchDoneRef.current) return;
+    initialSearchDoneRef.current = true;
+
+    const need = searchParams.get("service_need")?.trim() ?? "";
+    const city = searchParams.get("city")?.trim() ?? "";
+    if (need) setServiceNeedInput(need);
+    if (city) setAddress(city);
+
+    const flat = Object.values(taxonomy).flat();
+    const svc = need && flat.includes(need) ? need : "";
+    const cat = svc ? categoryForCatalogService(taxonomy, svc) : "";
+
+    void searchProviders({ service: svc, category: cat, address: city });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [taxonomy, searchParams]);
 
   useEffect(() => {
     const loadEligibleReviewProviders = async () => {
