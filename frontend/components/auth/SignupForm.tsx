@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { apiRequest, ApiError } from "@/lib/api";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 type Role = "customer" | "provider";
 
@@ -83,6 +85,9 @@ export function SignupForm({ defaultRole = "customer", lockedRole }: SignupFormP
   const canSubmit = isPhoneVerified && Boolean(termsAccepted);
   const activeTerms = role === "provider" ? providerTerms : customerTerms;
   const activeTermsError = role === "provider" ? providerTermsError : customerTermsError;
+
+  const inputClass =
+    "w-full rounded-xl border border-border bg-muted/50 px-4 py-2.5 text-foreground placeholder:text-muted-foreground shadow-sm transition-smooth focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:cursor-not-allowed disabled:opacity-60 disabled:bg-muted/80";
 
   useEffect(() => {
     const loadTerms = async () => {
@@ -209,27 +214,29 @@ export function SignupForm({ defaultRole = "customer", lockedRole }: SignupFormP
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
       {!lockedRole ? (
-        <div className="rounded-xl bg-slate-100 p-1">
+        <div className="rounded-xl border border-border bg-muted/40 p-1">
           <div className="grid grid-cols-2 gap-1">
             <button
               type="button"
               onClick={() => setValue("role", "customer", { shouldValidate: true })}
-              className={`rounded-lg px-3 py-2 text-sm font-medium transition ${
+              className={cn(
+                "rounded-lg px-3 py-2 text-sm font-medium transition-smooth",
                 role === "customer"
-                  ? "bg-white text-slate-900 shadow-sm"
-                  : "text-slate-600 hover:text-slate-900"
-              }`}
+                  ? "border border-border bg-background text-foreground shadow-soft"
+                  : "text-muted-foreground hover:text-foreground",
+              )}
             >
               Customer
             </button>
             <button
               type="button"
               onClick={() => setValue("role", "provider", { shouldValidate: true })}
-              className={`rounded-lg px-3 py-2 text-sm font-medium transition ${
+              className={cn(
+                "rounded-lg px-3 py-2 text-sm font-medium transition-smooth",
                 role === "provider"
-                  ? "bg-white text-slate-900 shadow-sm"
-                  : "text-slate-600 hover:text-slate-900"
-              }`}
+                  ? "border border-border bg-background text-foreground shadow-soft"
+                  : "text-muted-foreground hover:text-foreground",
+              )}
             >
               Provider
             </button>
@@ -241,45 +248,45 @@ export function SignupForm({ defaultRole = "customer", lockedRole }: SignupFormP
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div>
-          <label htmlFor="firstName" className="mb-1.5 block text-sm font-medium text-slate-700">
+          <label htmlFor="firstName" className="mb-1.5 block text-sm font-medium text-foreground">
             First name
           </label>
           <input
             id="firstName"
-            className="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-slate-900 shadow-sm transition focus:border-sky-400 focus:outline-none focus:ring-4 focus:ring-sky-100"
+            className={inputClass}
             placeholder="Ava"
             {...register("firstName", { required: "First name is required" })}
           />
           {errors.firstName ? (
-            <p className="mt-1 text-xs text-rose-500">{errors.firstName.message}</p>
+            <p className="mt-1 text-xs text-destructive">{errors.firstName.message}</p>
           ) : null}
         </div>
 
         <div>
-          <label htmlFor="lastName" className="mb-1.5 block text-sm font-medium text-slate-700">
+          <label htmlFor="lastName" className="mb-1.5 block text-sm font-medium text-foreground">
             Last name
           </label>
           <input
             id="lastName"
-            className="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-slate-900 shadow-sm transition focus:border-sky-400 focus:outline-none focus:ring-4 focus:ring-sky-100"
+            className={inputClass}
             placeholder="Shaw"
             {...register("lastName", { required: "Last name is required" })}
           />
           {errors.lastName ? (
-            <p className="mt-1 text-xs text-rose-500">{errors.lastName.message}</p>
+            <p className="mt-1 text-xs text-destructive">{errors.lastName.message}</p>
           ) : null}
         </div>
       </div>
 
       <div>
-        <label htmlFor="email" className="mb-1.5 block text-sm font-medium text-slate-700">
+        <label htmlFor="email" className="mb-1.5 block text-sm font-medium text-foreground">
           Email
         </label>
         <input
           id="email"
           type="email"
           autoComplete="email"
-          className="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-slate-900 shadow-sm transition focus:border-sky-400 focus:outline-none focus:ring-4 focus:ring-sky-100"
+          className={inputClass}
           placeholder="you@example.com"
           {...register("email", {
             required: "Email is required",
@@ -289,11 +296,11 @@ export function SignupForm({ defaultRole = "customer", lockedRole }: SignupFormP
             },
           })}
         />
-        {errors.email ? <p className="mt-1 text-xs text-rose-500">{errors.email.message}</p> : null}
+        {errors.email ? <p className="mt-1 text-xs text-destructive">{errors.email.message}</p> : null}
       </div>
 
       <div>
-        <label htmlFor="phone" className="mb-1.5 block text-sm font-medium text-slate-700">
+        <label htmlFor="phone" className="mb-1.5 block text-sm font-medium text-foreground">
           Mobile number
         </label>
         <div className="flex gap-2">
@@ -303,7 +310,7 @@ export function SignupForm({ defaultRole = "customer", lockedRole }: SignupFormP
             inputMode="numeric"
             autoComplete="tel"
             disabled={isPhoneVerified}
-            className="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-slate-900 shadow-sm transition focus:border-sky-400 focus:outline-none focus:ring-4 focus:ring-sky-100 disabled:cursor-not-allowed disabled:bg-slate-100"
+            className={inputClass}
             placeholder="9876543210"
             {...register("phone", {
               required: "Mobile number is required",
@@ -327,25 +334,25 @@ export function SignupForm({ defaultRole = "customer", lockedRole }: SignupFormP
             type="button"
             onClick={handleSendOtp}
             disabled={!isPhoneValid || isPhoneVerified || isSendingOtp}
-            className="shrink-0 rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+            className="shrink-0 rounded-xl border border-border bg-muted/60 px-4 py-2.5 text-sm font-medium text-foreground transition-smooth hover:border-teal hover:bg-muted disabled:cursor-not-allowed disabled:opacity-60"
           >
             {isSendingOtp ? "Sending..." : "Send OTP"}
           </button>
         </div>
-        {errors.phone ? <p className="mt-1 text-xs text-rose-500">{errors.phone.message}</p> : null}
+        {errors.phone ? <p className="mt-1 text-xs text-destructive">{errors.phone.message}</p> : null}
         {!errors.phone && !isPhoneVerified ? (
-          <p className="mt-1 text-xs text-slate-500">Use 10 digits or E.164 format (e.g. +919876543210).</p>
+          <p className="mt-1 text-xs text-muted-foreground">Use 10 digits or E.164 format (e.g. +919876543210).</p>
         ) : null}
         {isPhoneVerified ? (
-          <span className="mt-2 inline-flex items-center rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-semibold text-emerald-700">
+          <span className="mt-2 inline-flex items-center rounded-full border border-teal/40 bg-teal/15 px-2.5 py-1 text-xs font-semibold text-teal">
             Verified
           </span>
         ) : null}
       </div>
 
       {isOtpSent && !isPhoneVerified ? (
-        <div className="rounded-xl border border-slate-200 bg-slate-50/70 p-3.5">
-          <label htmlFor="otpCode" className="mb-1.5 block text-sm font-medium text-slate-700">
+        <div className="rounded-xl border border-border bg-muted/30 p-3.5">
+          <label htmlFor="otpCode" className="mb-1.5 block text-sm font-medium text-foreground">
             Enter OTP
           </label>
           <div className="flex gap-2">
@@ -360,24 +367,24 @@ export function SignupForm({ defaultRole = "customer", lockedRole }: SignupFormP
                 setOtpCode(sanitized);
                 setOtpError("");
               }}
-              className="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 tracking-[0.3em] text-slate-900 shadow-sm transition placeholder:text-slate-400 focus:border-sky-400 focus:outline-none focus:ring-4 focus:ring-sky-100"
+              className={cn(inputClass, "tracking-[0.3em]")}
               placeholder="000000"
             />
-            <button
+            <Button
               type="button"
               onClick={handleVerifyOtp}
               disabled={isVerifyingOtp}
-              className="shrink-0 rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-70"
+              className="h-11 shrink-0 rounded-xl bg-teal-gradient px-4 text-sm font-semibold text-secondary-foreground shadow-teal hover:opacity-90 disabled:opacity-70"
             >
               {isVerifyingOtp ? "Verifying..." : "Verify"}
-            </button>
+            </Button>
           </div>
-          {otpError ? <p className="mt-1 text-xs text-rose-500">{otpError}</p> : null}
+          {otpError ? <p className="mt-1 text-xs text-destructive">{otpError}</p> : null}
         </div>
       ) : null}
 
       <div>
-        <label htmlFor="password" className="mb-1.5 block text-sm font-medium text-slate-700">
+        <label htmlFor="password" className="mb-1.5 block text-sm font-medium text-foreground">
           Password
         </label>
         <div className="relative">
@@ -385,7 +392,7 @@ export function SignupForm({ defaultRole = "customer", lockedRole }: SignupFormP
             id="password"
             type={showPassword ? "text" : "password"}
             autoComplete="new-password"
-            className="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 pr-12 text-slate-900 shadow-sm transition focus:border-sky-400 focus:outline-none focus:ring-4 focus:ring-sky-100"
+            className={cn(inputClass, "pr-12")}
             placeholder="Create a strong password"
             {...register("password", {
               required: "Password is required",
@@ -398,7 +405,7 @@ export function SignupForm({ defaultRole = "customer", lockedRole }: SignupFormP
           <button
             type="button"
             onClick={() => setShowPassword((prev) => !prev)}
-            className="absolute inset-y-0 right-0 flex items-center px-3 text-slate-500 transition hover:text-slate-800"
+            className="absolute inset-y-0 right-0 flex items-center px-3 text-muted-foreground transition-smooth hover:text-foreground"
             aria-label={showPassword ? "Hide password" : "Show password"}
           >
             {showPassword ? (
@@ -423,18 +430,18 @@ export function SignupForm({ defaultRole = "customer", lockedRole }: SignupFormP
           </button>
         </div>
         {errors.password ? (
-          <p className="mt-1 text-xs text-rose-500">{errors.password.message}</p>
+          <p className="mt-1 text-xs text-destructive">{errors.password.message}</p>
         ) : null}
       </div>
 
       {role === "provider" ? (
         <div>
-          <label htmlFor="serviceCategory" className="mb-1.5 block text-sm font-medium text-slate-700">
+          <label htmlFor="serviceCategory" className="mb-1.5 block text-sm font-medium text-foreground">
             Service category
           </label>
           <input
             id="serviceCategory"
-            className="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-slate-900 shadow-sm transition focus:border-sky-400 focus:outline-none focus:ring-4 focus:ring-sky-100"
+            className={inputClass}
             placeholder="Plumbing, Cleaning, Electrician..."
             {...register("serviceCategory", {
               validate: (value) => {
@@ -445,7 +452,7 @@ export function SignupForm({ defaultRole = "customer", lockedRole }: SignupFormP
             })}
           />
           {errors.serviceCategory ? (
-            <p className="mt-1 text-xs text-rose-500">{errors.serviceCategory.message}</p>
+            <p className="mt-1 text-xs text-destructive">{errors.serviceCategory.message}</p>
           ) : null}
         </div>
       ) : null}
@@ -454,12 +461,12 @@ export function SignupForm({ defaultRole = "customer", lockedRole }: SignupFormP
         <label className="flex items-start gap-2">
           <input
             type="checkbox"
-            className="mt-1 h-4 w-4 rounded border-slate-300 text-slate-900 focus:ring-2 focus:ring-sky-300 focus:ring-offset-0"
+            className="mt-1 h-4 w-4 rounded border-border bg-muted text-primary focus:ring-2 focus:ring-ring focus:ring-offset-0"
             {...register("termsAccepted", {
               required: "Please accept Terms & Conditions and Privacy Policy",
             })}
           />
-          <span className="text-sm leading-5 text-slate-500">
+          <span className="text-sm leading-5 text-muted-foreground">
             I agree to the{" "}
             <button
               type="button"
@@ -468,7 +475,7 @@ export function SignupForm({ defaultRole = "customer", lockedRole }: SignupFormP
                 event.stopPropagation();
                 setShowTerms(true);
               }}
-              className="font-medium text-slate-600 underline decoration-slate-300 underline-offset-2 hover:text-slate-900"
+              className="font-medium text-primary underline decoration-border underline-offset-2 transition-smooth hover:opacity-90"
             >
               {role === "provider" ? "Provider Terms & Conditions" : "Terms & Conditions"}
             </button>{" "}
@@ -480,7 +487,7 @@ export function SignupForm({ defaultRole = "customer", lockedRole }: SignupFormP
                 event.stopPropagation();
                 setShowTerms(true);
               }}
-              className="font-medium text-slate-600 underline decoration-slate-300 underline-offset-2 hover:text-slate-900"
+              className="font-medium text-primary underline decoration-border underline-offset-2 transition-smooth hover:opacity-90"
             >
               {role === "provider" ? "Provider Policy" : "Privacy Policy"}
             </button>
@@ -489,36 +496,36 @@ export function SignupForm({ defaultRole = "customer", lockedRole }: SignupFormP
         <button
           type="button"
           onClick={() => setShowTerms(true)}
-          className="mt-1 text-xs font-medium text-slate-600 underline decoration-slate-300 underline-offset-2 hover:text-slate-900"
+          className="mt-1 text-xs font-medium text-teal underline decoration-border underline-offset-2 transition-smooth hover:text-teal-glow"
         >
           View full {role === "provider" ? "provider" : "user"} terms
         </button>
         {errors.termsAccepted ? (
-          <p className="mt-1 text-xs text-rose-500">{errors.termsAccepted.message}</p>
+          <p className="mt-1 text-xs text-destructive">{errors.termsAccepted.message}</p>
         ) : null}
       </div>
 
       {showTerms ? (
-        <div className="max-h-64 space-y-3 overflow-y-auto rounded-xl border border-slate-200 bg-slate-50/70 p-3.5 text-sm text-slate-700">
+        <div className="max-h-64 space-y-3 overflow-y-auto rounded-xl border border-border bg-muted/30 p-3.5 text-sm text-muted-foreground">
           <div className="flex items-center justify-between">
-            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+            <p className="text-xs font-semibold uppercase tracking-wide text-teal">
               {role === "provider" ? "Provider Terms" : "User Terms"}
             </p>
             <button
               type="button"
               onClick={() => setShowTerms(false)}
-              className="text-xs font-medium text-slate-500 hover:text-slate-900"
+              className="text-xs font-medium text-muted-foreground transition-smooth hover:text-foreground"
             >
               Close
             </button>
           </div>
           {activeTerms ? (
             <>
-              <p className="font-semibold text-slate-900">{activeTerms.platform}</p>
+              <p className="font-semibold text-foreground">{activeTerms.platform}</p>
               {activeTerms.sections.map((section) => (
                 <div key={section.title}>
-                  <p className="font-medium text-slate-900">{section.title}</p>
-                  <ul className="mt-1 list-disc space-y-1 pl-5 text-slate-600">
+                  <p className="font-medium text-foreground">{section.title}</p>
+                  <ul className="mt-1 list-disc space-y-1 pl-5 text-muted-foreground">
                     {section.points.map((point) => (
                       <li key={`${section.title}-${point}`}>{point}</li>
                     ))}
@@ -527,29 +534,31 @@ export function SignupForm({ defaultRole = "customer", lockedRole }: SignupFormP
               ))}
             </>
           ) : activeTermsError ? (
-            <p className="text-rose-600">{activeTermsError}</p>
+            <p className="text-destructive">{activeTermsError}</p>
           ) : (
-            <p className="text-slate-500">Loading terms and conditions...</p>
+            <p className="text-muted-foreground">Loading terms and conditions...</p>
           )}
         </div>
       ) : null}
 
-      <button
+      <Button
         type="submit"
         disabled={isSubmitting || !canSubmit}
-        className="w-full rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-70"
+        className="h-11 w-full rounded-xl bg-gold-gradient text-sm font-semibold text-primary-foreground shadow-gold transition-smooth hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
       >
         {isSubmitting
           ? "Creating account..."
           : role === "provider"
             ? "Create provider account"
             : "Create customer account"}
-      </button>
+      </Button>
       {!isPhoneVerified ? (
-        <p className="text-center text-xs text-slate-500">Verify your mobile number to enable signup.</p>
+        <p className="text-center text-xs text-muted-foreground">Verify your mobile number to enable signup.</p>
       ) : null}
-      {apiError ? <p className="text-center text-sm text-rose-600">{apiError}</p> : null}
-      {apiSuccess ? <p className="text-center text-sm text-emerald-600">{apiSuccess}</p> : null}
+      {apiError ? <p className="text-center text-sm text-destructive">{apiError}</p> : null}
+      {apiSuccess ? (
+        <p className="text-center text-sm font-medium text-teal">{apiSuccess}</p>
+      ) : null}
     </form>
   );
 }

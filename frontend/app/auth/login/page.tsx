@@ -1,36 +1,31 @@
-"use client";
-
 import Link from "next/link";
+import { AuthShell } from "@/components/auth/AuthShell";
 import { LoginForm } from "@/components/auth/LoginForm";
+
+const linkClass = "font-medium text-primary transition-smooth hover:opacity-90";
 
 export default function LoginPage() {
   return (
-    <main className="relative flex min-h-screen items-center justify-center overflow-hidden bg-slate-50 px-6 py-12">
-      <div className="pointer-events-none absolute -left-20 top-8 h-64 w-64 rounded-full bg-orange-200/35 blur-3xl" />
-      <div className="pointer-events-none absolute -right-20 bottom-8 h-72 w-72 rounded-full bg-amber-200/35 blur-3xl" />
-      <div className="relative w-full max-w-md">
-        <div className="rounded-2xl border border-slate-200/80 bg-white p-8 shadow-xl ring-1 ring-slate-100">
-          <div className="w-full max-w-md">
-            <LoginForm expectedRole="customer" onFieldFocus={() => {}} />
-          </div>
-          <p className="mt-6 text-center text-sm text-slate-600">
-            New here?{" "}
-            <Link href="/auth/signup/customer" className="font-medium text-slate-900 hover:text-sky-700">
-              Create a customer account
-            </Link>
-          </p>
-          <p className="mt-2 text-center text-sm text-slate-500">
-            Pro on Haazir?{" "}
-            <Link href="/auth/login/provider" className="font-medium text-slate-800 hover:text-sky-700">
-              Sign in as a provider
-            </Link>
-            {" · "}
-            <Link href="/auth/signup/provider" className="font-medium text-slate-800 hover:text-sky-700">
-              Create a provider account
-            </Link>
-          </p>
-        </div>
+    <AuthShell>
+      <LoginForm expectedRole="customer" />
+      <div className="mt-8 space-y-3 text-center text-sm text-muted-foreground">
+        <p>
+          New here?{" "}
+          <Link href="/auth/signup/customer" className={linkClass}>
+            Create a customer account
+          </Link>
+        </p>
+        <p>
+          Pro on Haazir?{" "}
+          <Link href="/auth/login/provider" className={linkClass}>
+            Sign in as a provider
+          </Link>
+          <span className="mx-1.5 text-border">·</span>
+          <Link href="/auth/signup/provider" className={linkClass}>
+            Create a provider account
+          </Link>
+        </p>
       </div>
-    </main>
+    </AuthShell>
   );
 }

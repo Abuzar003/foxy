@@ -4,6 +4,9 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { apiRequest, ApiError } from "@/lib/api";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { cn } from "@/lib/utils";
 
 export interface LoginPayload {
   email: string;
@@ -29,15 +32,23 @@ interface AuthResponse {
 
 type FocusField = "email" | "password";
 
+const fieldClass =
+  "h-11 rounded-xl border-border bg-muted/60 text-foreground placeholder:text-muted-foreground focus-visible:ring-primary";
+
 interface LoginFormProps {
-  onFieldFocus: (field: FocusField) => void;
+  onFieldFocus?: (field: FocusField) => void;
   onFieldBlur?: () => void;
   onSubmitIntent?: () => void;
   /** When set, only accounts with this role may complete sign-in (wrong role shows a clear message). */
   expectedRole?: "customer" | "provider";
 }
 
-export function LoginForm({ onFieldFocus, onFieldBlur, onSubmitIntent, expectedRole }: LoginFormProps) {
+export function LoginForm({
+  onFieldFocus = () => {},
+  onFieldBlur,
+  onSubmitIntent,
+  expectedRole,
+}: LoginFormProps) {
   const [apiError, setApiError] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const router = useRouter();
@@ -86,26 +97,37 @@ export function LoginForm({ onFieldFocus, onFieldBlur, onSubmitIntent, expectedR
   };
 
   return (
-    <div className="rounded-2xl border border-slate-200/80 bg-white p-8 shadow-[0_20px_65px_rgba(15,23,42,0.14)] ring-1 ring-slate-100">
-      <h1 className="text-center text-2xl font-semibold tracking-tight text-slate-900">
-        {expectedRole === "provider" ? "Provider sign in" : "Welcome back"}
+    <div className="rounded-2xl border border-border bg-card-gradient p-8 shadow-soft">
+      <span className="inline-flex items-center gap-2 rounded-full border border-border bg-muted/50 px-3 py-1 text-xs font-semibold uppercase tracking-widest text-teal">
+        {expectedRole === "provider" ? "Provider" : "Customer"}
+      </span>
+      <h1 className="mt-4 text-2xl font-bold tracking-tight text-foreground md:text-3xl">
+        {expectedRole === "provider" ? (
+          <>
+            Provider <span className="text-gradient-gold">sign in</span>
+          </>
+        ) : (
+          <>
+            Welcome <span className="text-gradient-gold">back</span>
+          </>
+        )}
       </h1>
-      <p className="mt-1 text-center text-sm text-slate-500">
+      <p className="mt-2 text-sm text-muted-foreground">
         {expectedRole === "provider"
-          ? "Sign in to manage your profile, inbox, and jobs."
-          : "Sign in to continue booking or managing services."}
+          ? "Manage your profile, inbox, and jobs in one place."
+          : "Continue booking trusted home services with your account."}
       </p>
 
-      <form onSubmit={handleSubmit(onSubmit)} className="mt-6 space-y-4">
+      <form onSubmit={handleSubmit(onSubmit)} className="mt-8 space-y-4">
         <div>
-          <label htmlFor="email" className="mb-1.5 block text-sm font-medium text-slate-700">
+          <label htmlFor="email" className="mb-1.5 block text-sm font-medium text-foreground">
             Email
           </label>
-          <input
+          <Input
             id="email"
             type="email"
             autoComplete="email"
-            className="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-slate-900 shadow-sm transition focus:border-sky-400 focus:outline-none focus:ring-4 focus:ring-sky-100"
+            className={fieldClass}
             placeholder="you@example.com"
             {...register("email", {
               required: "Email is required",
@@ -117,21 +139,19 @@ export function LoginForm({ onFieldFocus, onFieldBlur, onSubmitIntent, expectedR
             onFocus={() => onFieldFocus("email")}
             onBlur={onFieldBlur}
           />
-          {errors.email ? (
-            <p className="mt-1 text-xs text-rose-500">{errors.email.message}</p>
-          ) : null}
+          {errors.email ? <p className="mt-1 text-xs text-destructive">{errors.email.message}</p> : null}
         </div>
 
         <div>
-          <label htmlFor="password" className="mb-1.5 block text-sm font-medium text-slate-700">
+          <label htmlFor="password" className="mb-1.5 block text-sm font-medium text-foreground">
             Password
           </label>
           <div className="relative">
-            <input
+            <Input
               id="password"
               type={showPassword ? "text" : "password"}
               autoComplete="current-password"
-              className="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 pr-12 text-slate-900 shadow-sm transition focus:border-sky-400 focus:outline-none focus:ring-4 focus:ring-sky-100"
+              className={cn(fieldClass, "pr-12")}
               placeholder="Enter your password"
               {...register("password", {
                 required: "Password is required",
@@ -146,7 +166,7 @@ export function LoginForm({ onFieldFocus, onFieldBlur, onSubmitIntent, expectedR
             <button
               type="button"
               onClick={() => setShowPassword((prev) => !prev)}
-              className="absolute inset-y-0 right-0 flex items-center px-3 text-slate-500 transition hover:text-slate-800"
+              className="absolute inset-y-0 right-0 flex items-center px-3 text-muted-foreground transition-smooth hover:text-foreground"
               aria-label={showPassword ? "Hide password" : "Show password"}
             >
               {showPassword ? (
@@ -170,21 +190,19 @@ export function LoginForm({ onFieldFocus, onFieldBlur, onSubmitIntent, expectedR
               )}
             </button>
           </div>
-          {errors.password ? (
-            <p className="mt-1 text-xs text-rose-500">{errors.password.message}</p>
-          ) : null}
+          {errors.password ? <p className="mt-1 text-xs text-destructive">{errors.password.message}</p> : null}
         </div>
 
-        <button
+        <Button
           type="submit"
           onClick={onSubmitIntent}
           disabled={isSubmitting}
-          className="w-full rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-70"
+          className="h-11 w-full rounded-xl bg-gold-gradient text-sm font-semibold text-primary-foreground shadow-gold hover:opacity-90"
         >
           {isSubmitting ? "Signing in..." : "Sign in"}
-        </button>
+        </Button>
 
-        {apiError ? <p className="text-center text-sm text-rose-600">{apiError}</p> : null}
+        {apiError ? <p className="text-center text-sm text-destructive">{apiError}</p> : null}
       </form>
     </div>
   );
