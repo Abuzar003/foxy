@@ -1,16 +1,16 @@
 """
 Seed provider users with Indian names, addresses, bios, INR-style rates, and
-portrait URLs. The total count is split randomly across service categories
-(each provider is assigned one primary category; counts look like "5 here,
-2 there, 10 there" over Transport, Home help, etc.).
+portrait URLs. Each provider gets the single catalog service under its category
+(currently one category / one service). Total count is split randomly across
+categories (with one category, every provider uses that category).
 
 From the backend folder (either works):
   python seed_indian_providers.py
   python scripts/seed_indian_providers.py
 
 Examples:
-  python seed_indian_providers.py --count 17 --seed 42
-  python scripts/seed_indian_providers.py --count 50 --password "YourPass@1"
+  python seed_indian_providers.py --count 1 --seed 42
+  python scripts/seed_indian_providers.py --count 10 --password "YourPass@1"
 
 From inside backend/scripts (this folder):
   python seed_indian_providers.py
@@ -122,10 +122,6 @@ LOCATIONS: list[tuple[str, str, str, str]] = [
 ]
 
 
-def _all_service_names() -> list[str]:
-    return [s for services in SERVICE_TAXONOMY.values() for s in services]
-
-
 def _random_counts_per_category(rng: random.Random, total: int) -> dict[str, int]:
     """Multinomial-style split: each provider is assigned a random category (sums to total)."""
     categories = list(SERVICE_TAXONOMY.keys())
@@ -195,7 +191,6 @@ async def seed_indian_providers(count: int, password: str, seed: int | None) -> 
     user_repo = UserRepository(mongodb.db)
     await user_repo.create_indexes()
 
-    all_services = _all_service_names()
     rng = random.Random(seed if seed is not None else random.randrange(1 << 30))
     hashed_password = hash_password(password)
     run_tag = datetime.now(timezone.utc).strftime("%Y%m%d%H%M%S")
@@ -219,11 +214,7 @@ async def seed_indian_providers(count: int, password: str, seed: int | None) -> 
         for index, category in enumerate(assignments):
             cat_services = SERVICE_TAXONOMY[category]
             primary_service = rng.choice(cat_services)
-            others = [s for s in all_services if s != primary_service]
-            extra_n = rng.randint(0, min(2, len(others)))
             services = [primary_service]
-            if extra_n:
-                services.extend(rng.sample(others, extra_n))
 
             city, locality, state, pin = rng.choice(LOCATIONS)
             house_no = 12 + rng.randint(1, 180)
@@ -300,19 +291,15 @@ async def seed_indian_providers(count: int, password: str, seed: int | None) -> 
 def _parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description=(
-            "Seed Indian provider users; total count is split randomly across "
-            f"service categories (multinomial, max {MAX_PROVIDERS_PER_RUN} per run)."
+            "Seed Indian provider users (one service per provider; "
+            f"max {MAX_PROVIDERS_PER_RUN} per run)."
         ),
     )
     parser.add_argument(
         "--count",
         type=int,
-        default=None,
-        help=(
-            f"Total providers to create (1–{MAX_PROVIDERS_PER_RUN}). "
-            "If omitted, a random total between 12 and 40 is used so category counts vary "
-            "(e.g. a few in one category, many in another)."
-        ),
+        default=1,
+        help=f"Total providers to create (1–{MAX_PROVIDERS_PER_RUN}, default: 1).",
     )
     parser.add_argument(
         "--password",
@@ -331,5 +318,4 @@ def _parse_args() -> argparse.Namespace:
 
 if __name__ == "__main__":
     args = _parse_args()
-    n = args.count if args.count is not None else random.randint(12, 40)
-    asyncio.run(seed_indian_providers(count=n, password=args.password, seed=args.seed))
+    asyncio.run(seed_indian_providers(count=args.count, password=args.password, seed=args.seed))

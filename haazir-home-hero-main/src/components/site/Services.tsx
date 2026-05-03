@@ -1,15 +1,7 @@
-import { Car, Home, Package, Users, Shield, ArrowRight } from "lucide-react";
+import { Home, ArrowRight } from "lucide-react";
 
 const services = [
-  { icon: Car, name: "On-Demand Drivers", blurb: "Trips, functions, emergency travel" },
   { icon: Home, name: "Maids / Helpers", blurb: "Maids and helpers — cleaning, shifting" },
-  { icon: Package, name: "Delivery / Helper / Loader", blurb: "Lifting, shifting, shop runs" },
-  { icon: Users, name: "Event Helpers", blurb: "Waiters, setup, clean-up" },
-  {
-    icon: Shield,
-    name: "Security Guards",
-    blurb: "Events, shops, night cover",
-  },
 ];
 
 const Services = () => {
@@ -17,18 +9,16 @@ const Services = () => {
     <section id="services" className="py-20 md:py-28">
       <div className="container">
         <div className="max-w-2xl">
-          <span className="text-xs font-semibold uppercase tracking-widest text-teal">
-            Categories
-          </span>
+          <span className="text-xs font-semibold uppercase tracking-widest text-teal">Service</span>
           <h2 className="mt-3 text-3xl md:text-4xl font-bold">
-            Services available on <span className="text-gradient-gold">Haazir</span>
+            Haazir <span className="text-gradient-gold">launch</span> offering
           </h2>
           <p className="mt-4 text-muted-foreground">
-            Every pro is background-checked and rated by real customers. Start with one of our launch offerings.
+            Every pro is background-checked and rated by real customers.
           </p>
         </div>
 
-        <div className="mt-12 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 md:gap-5">
+        <div className="mt-12 max-w-md mx-auto grid grid-cols-1 gap-4 md:gap-5">
           {services.map(({ icon: Icon, name, blurb }) => (
             <button
               key={name}
@@ -48,7 +38,7 @@ const Services = () => {
 
         <div className="mt-10 text-center">
           <a href="#" className="inline-flex items-center gap-2 text-teal hover:text-teal-glow font-medium">
-            View all services <ArrowRight className="h-4 w-4" />
+            Get started <ArrowRight className="h-4 w-4" />
           </a>
         </div>
       </div>

@@ -1,11 +1,12 @@
 from datetime import date, datetime, time, timedelta
 from typing import Annotated, Optional
-from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
+from zoneinfo import ZoneInfo
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 
 from app.api.dependencies import get_current_user, get_offer_repository, get_user_repository
 from app.core.exceptions import UnauthorizedException
+from app.core.timezone_compat import resolve_client_timezone
 from app.core.service_taxonomy import ALL_SERVICES
 from app.repositories.offer_repository import OfferRepository
 from app.repositories.user_repository import UserRepository
@@ -45,14 +46,8 @@ def _parse_time(time_str: str) -> time:
         ) from exc
 
 
-def _normalize_slots(payload: CreateOfferRequest) -> tuple[list[dict], float, int]:
-    try:
-        zone = ZoneInfo(payload.timezone)
-    except ZoneInfoNotFoundError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid timezone",
-        ) from exc
+def _normalize_slots(payload: CreateOfferRequest) -> tuple[list[dict], float, int, str]:
+    zone, resolved_tz = resolve_client_timezone(payload.timezone)
 
     raw_slots: list[tuple[str, str, str]] = []
     if payload.schedule_type == "single":
@@ -134,7 +129,7 @@ def _normalize_slots(payload: CreateOfferRequest) -> tuple[list[dict], float, in
         total_hours += duration_hours
         day_keys.add(local_day_key)
 
-    return normalized, round(total_hours, 2), len(day_keys)
+    return normalized, round(total_hours, 2), len(day_keys), resolved_tz
 
 
 def _to_offer_response(doc: dict) -> OfferResponse:
@@ -201,7 +196,7 @@ async def create_offer(
             detail="A pending offer already exists for this provider and service",
         )
 
-    normalized_slots, total_hours, total_days = _normalize_slots(payload)
+    normalized_slots, total_hours, total_days, resolved_tz = _normalize_slots(payload)
 
     created = await offer_repo.create_offer(
         {
@@ -213,7 +208,7 @@ async def create_offer(
             "base_price": payload.base_price,
             "offered_price": payload.offered_price,
             "schedule_type": payload.schedule_type,
-            "timezone": payload.timezone,
+            "timezone": resolved_tz,
             "slots": normalized_slots,
             "total_hours": total_hours,
             "total_days": total_days,

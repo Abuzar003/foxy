@@ -4,7 +4,6 @@ import sys
 from collections import Counter
 from datetime import datetime, timezone
 from pathlib import Path
-from random import Random
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 if str(PROJECT_ROOT) not in sys.path:
@@ -16,7 +15,7 @@ from app.db.mongodb import mongodb
 from app.repositories.user_repository import UserRepository
 
 DEFAULT_PASSWORD = "Password@123"
-DEFAULT_PROVIDER_COUNT = 100
+DEFAULT_PROVIDER_COUNT = 1
 PLATFORM_NAME = "Haazir"
 
 
@@ -57,7 +56,6 @@ async def seed_providers(count: int, password: str) -> None:
     await user_repo.create_indexes()
 
     service_pairs = _flatten_services()
-    rng = Random(20260501)
     hashed_password = hash_password(password)
     run_tag = datetime.now(timezone.utc).strftime("%Y%m%d%H%M%S")
 
@@ -69,15 +67,7 @@ async def seed_providers(count: int, password: str) -> None:
     try:
         for index in range(count):
             category, primary_service = service_pairs[index % len(service_pairs)]
-            extra_services_count = rng.randint(0, 2)
             services = [primary_service]
-
-            cursor = (index * 5 + 3) % len(service_pairs)
-            while len(services) < 1 + extra_services_count:
-                _, candidate_service = service_pairs[cursor]
-                if candidate_service not in services:
-                    services.append(candidate_service)
-                cursor = (cursor + 7) % len(service_pairs)
 
             provider_number = index + 1
             full_name = f"Provider {provider_number:03d}"

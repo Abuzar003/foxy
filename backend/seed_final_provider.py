@@ -1,10 +1,11 @@
 """
-Run the Indian provider seed from the backend folder:
+Run the provider batch seed from the backend folder:
 
-  python seed_indian_providers.py --count 1 --seed 42
-  python seed_indian_providers.py --count 10 --password "YourPass@1"
+  python seed_final_provider.py
+  python seed_final_provider.py --count 75
+  python seed_final_provider.py --seed 42 --password "YourPass@1"
 
-Implementation lives in scripts/seed_indian_providers.py.
+Implementation: scripts/seed_final_provider.py
 """
 
 from __future__ import annotations
@@ -15,7 +16,7 @@ from pathlib import Path
 
 
 def main() -> None:
-    script = Path(__file__).resolve().parent / "scripts" / "seed_indian_providers.py"
+    script = Path(__file__).resolve().parent / "scripts" / "seed_final_provider.py"
     if not script.is_file():
         print(f"Expected seed script at {script}", file=sys.stderr)
         raise SystemExit(1)

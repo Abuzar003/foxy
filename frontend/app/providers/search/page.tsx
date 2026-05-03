@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { apiRequest, ApiError } from "@/lib/api";
+import { getLocalDateInputString, getOfferIANATimezone, normalizeOfferDateString } from "@/lib/clientTimezone";
 import { createOffer, getCustomerOffers } from "@/lib/offers";
 import { AuthShell } from "@/components/auth/AuthShell";
 import { Button } from "@/components/ui/button";
@@ -284,11 +285,12 @@ export default function ProviderSearchPage() {
     }
 
     try {
-      const today = new Date();
-      const todayDateStr = today.toISOString().slice(0, 10);
+      const todayDateStr = getLocalDateInputString();
+      const offerTz = getOfferIANATimezone();
 
       if (scheduleType === "single") {
-        const date = offerDate[provider.id];
+        const dateRaw = offerDate[provider.id];
+        const date = normalizeOfferDateString(dateRaw ?? "") ?? dateRaw;
         const start = offerStartTime[provider.id];
         const end = offerEndTime[provider.id];
         if (!date || !start || !end) {
@@ -298,10 +300,17 @@ export default function ProviderSearchPage() {
           }));
           return;
         }
-        if (date <= todayDateStr) {
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
           setOfferStatus((prev) => ({
             ...prev,
-            [provider.id]: "Service date must be in the future.",
+            [provider.id]: "Use a valid service date (YYYY-MM-DD).",
+          }));
+          return;
+        }
+        if (date < todayDateStr) {
+          setOfferStatus((prev) => ({
+            ...prev,
+            [provider.id]: "Service date cannot be in the past.",
           }));
           return;
         }
@@ -316,12 +325,16 @@ export default function ProviderSearchPage() {
             date,
             start_time: start,
             end_time: end,
-            timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC",
+            timezone: offerTz,
           },
           token,
         );
       } else {
-        const slots = offerSlots[provider.id] ?? [];
+        const slotsRaw = offerSlots[provider.id] ?? [];
+        const slots = slotsRaw.map((s) => ({
+          ...s,
+          date: normalizeOfferDateString(s.date) ?? s.date,
+        }));
         if (slots.length === 0 || slots.some((s) => !s.date || !s.start_time || !s.end_time)) {
           setOfferStatus((prev) => ({
             ...prev,
@@ -329,11 +342,18 @@ export default function ProviderSearchPage() {
           }));
           return;
         }
-        const hasPastOrToday = slots.some((slot) => slot.date <= todayDateStr);
-        if (hasPastOrToday) {
+        if (slots.some((s) => !/^\d{4}-\d{2}-\d{2}$/.test(s.date))) {
           setOfferStatus((prev) => ({
             ...prev,
-            [provider.id]: "All selected slot dates must be in the future.",
+            [provider.id]: "Each slot needs a valid date (YYYY-MM-DD).",
+          }));
+          return;
+        }
+        const hasPastDate = slots.some((slot) => slot.date < todayDateStr);
+        if (hasPastDate) {
+          setOfferStatus((prev) => ({
+            ...prev,
+            [provider.id]: "Slot dates cannot be in the past.",
           }));
           return;
         }
@@ -346,7 +366,7 @@ export default function ProviderSearchPage() {
             message: offerMessage[provider.id]?.trim() || undefined,
             schedule_type: "multi",
             slots,
-            timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC",
+            timezone: offerTz,
           },
           token,
         );
@@ -621,11 +641,13 @@ export default function ProviderSearchPage() {
                       <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
                         <input
                           type="date"
-                          min={new Date(Date.now() + 86400000).toISOString().slice(0, 10)}
+                          min={getLocalDateInputString()}
                           value={offerDate[provider.id] ?? ""}
-                          onChange={(event) =>
-                            setOfferDate((prev) => ({ ...prev, [provider.id]: event.target.value }))
-                          }
+                          onChange={(event) => {
+                            const raw = event.target.value;
+                            const fixed = normalizeOfferDateString(raw);
+                            setOfferDate((prev) => ({ ...prev, [provider.id]: fixed ?? raw }));
+                          }}
                           className={inputClass}
                         />
                         <select
@@ -663,15 +685,17 @@ export default function ProviderSearchPage() {
                           <div key={`${provider.id}-slot-${idx}`} className="grid grid-cols-1 gap-2 sm:grid-cols-3">
                             <input
                               type="date"
-                              min={new Date(Date.now() + 86400000).toISOString().slice(0, 10)}
+                              min={getLocalDateInputString()}
                               value={slot.date}
-                              onChange={(event) =>
+                              onChange={(event) => {
+                                const raw = event.target.value;
+                                const fixed = normalizeOfferDateString(raw);
                                 setOfferSlots((prev) => {
                                   const next = [...(prev[provider.id] ?? [])];
-                                  next[idx] = { ...next[idx], date: event.target.value };
+                                  next[idx] = { ...next[idx], date: fixed ?? raw };
                                   return { ...prev, [provider.id]: next };
-                                })
-                              }
+                                });
+                              }}
                               className={inputClass}
                             />
                             <select
