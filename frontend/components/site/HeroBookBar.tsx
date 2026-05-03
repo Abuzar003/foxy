@@ -5,21 +5,10 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Search, MapPin } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { API_BASE_URL } from "@/lib/api";
-
-type ServiceSuggestion = { service: string; category: string; score: number };
-type CityRow = { name: string; state: string };
+import { useDebouncedValue } from "@/hooks/useDebouncedValue";
+import { fetchCityMatches, fetchServiceSuggestions, type CityRow, type ServiceSuggestion } from "@/lib/searchApi";
 
 const DEBOUNCE_MS = 280;
-
-function useDebouncedValue<T>(value: T, ms: number): T {
-  const [debounced, setDebounced] = useState(value);
-  useEffect(() => {
-    const t = window.setTimeout(() => setDebounced(value), ms);
-    return () => window.clearTimeout(t);
-  }, [value, ms]);
-  return debounced;
-}
 
 export function HeroBookBar() {
   const [serviceInput, setServiceInput] = useState("");
@@ -45,46 +34,17 @@ export function HeroBookBar() {
     return () => document.removeEventListener("mousedown", onDoc);
   }, []);
 
-  const fetchServices = useCallback(async (q: string) => {
-    try {
-      const url = new URL(`${API_BASE_URL}/search/services`);
-      url.searchParams.set("q", q);
-      url.searchParams.set("limit", "5");
-      const res = await fetch(url.toString());
-      if (!res.ok) return;
-      const data = (await res.json()) as { suggestions: ServiceSuggestion[] };
-      setServiceSuggestions(data.suggestions ?? []);
-    } catch {
-      setServiceSuggestions([]);
-    }
-  }, []);
-
-  const fetchCities = useCallback(async (q: string) => {
-    if (!q.trim()) {
-      setCityMatches([]);
-      return;
-    }
-    try {
-      const url = new URL(`${API_BASE_URL}/search/cities`);
-      url.searchParams.set("q", q.trim());
-      url.searchParams.set("limit", "50");
-      url.searchParams.set("mode", "prefix");
-      const res = await fetch(url.toString());
-      if (!res.ok) return;
-      const data = (await res.json()) as { cities: CityRow[] };
-      setCityMatches(data.cities ?? []);
-    } catch {
-      setCityMatches([]);
-    }
-  }, []);
+  useEffect(() => {
+    void (async () => {
+      setServiceSuggestions(await fetchServiceSuggestions(debouncedService, 5));
+    })();
+  }, [debouncedService]);
 
   useEffect(() => {
-    void fetchServices(debouncedService);
-  }, [debouncedService, fetchServices]);
-
-  useEffect(() => {
-    void fetchCities(debouncedCity);
-  }, [debouncedCity, fetchCities]);
+    void (async () => {
+      setCityMatches(await fetchCityMatches(debouncedCity, 50));
+    })();
+  }, [debouncedCity]);
 
   const loginHref = (() => {
     const params = new URLSearchParams();
