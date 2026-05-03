@@ -1,6 +1,18 @@
 SERVICE_TAXONOMY: dict[str, list[str]] = {
+    "Transport": [
+        "On-Demand Drivers",
+    ],
     "Home help": [
         "Maids / Helpers",
+    ],
+    "Delivery & loading": [
+        "Delivery / Helper / Loader",
+    ],
+    "Events": [
+        "Event Helpers",
+    ],
+    "Security": [
+        "Security Guards",
     ],
 }
 

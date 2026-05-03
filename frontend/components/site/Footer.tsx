@@ -11,7 +11,13 @@ const cols = [
   },
   {
     title: "Services",
-    links: ["Maids / Helpers"],
+    links: [
+      "On-Demand Drivers",
+      "Maids / Helpers",
+      "Delivery / Helper / Loader",
+      "Event Helpers",
+      "Security Guards",
+    ],
   },
   {
     title: "Support",

@@ -1,4 +1,4 @@
-"""Rank catalog services from a free-text search query (single-service catalog supported)."""
+"""Rank Haazir's catalog services from a free-text search query."""
 
 from __future__ import annotations
 
@@ -7,6 +7,23 @@ from app.core.service_taxonomy import SERVICE_TAXONOMY, category_for_service
 
 # Extra tokens matched against the query (lowercased) beyond the official service name.
 _SERVICE_KEYWORDS: dict[str, tuple[str, ...]] = {
+    "On-Demand Drivers": (
+        "driver",
+        "drivers",
+        "driving",
+        "chauffeur",
+        "cab",
+        "taxi",
+        "car",
+        "trip",
+        "rides",
+        "ride",
+        "pickup",
+        "drop",
+        "airport",
+        "transport",
+        "wheel",
+    ),
     "Maids / Helpers": (
         "maid",
         "maids",
@@ -23,6 +40,50 @@ _SERVICE_KEYWORDS: dict[str, tuple[str, ...]] = {
         "ayah",
         "nanny",
         "babysit",
+    ),
+    "Delivery / Helper / Loader": (
+        "delivery",
+        "deliver",
+        "courier",
+        "loader",
+        "load",
+        "lifting",
+        "lift",
+        "shifting",
+        "shift",
+        "moving",
+        "mover",
+        "porter",
+        "parcel",
+        "package",
+        "goods",
+    ),
+    "Event Helpers": (
+        "event",
+        "events",
+        "wedding",
+        "party",
+        "waiter",
+        "waiters",
+        "banquet",
+        "usher",
+        "setup",
+        "cleanup",
+        "clean-up",
+        "catering",
+        "function",
+    ),
+    "Security Guards": (
+        "security",
+        "guard",
+        "guards",
+        "bouncer",
+        "watchman",
+        "gate",
+        "patrol",
+        "night",
+        "cctv",
+        "bodyguard",
     ),
 }
 

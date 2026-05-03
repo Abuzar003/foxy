@@ -1,7 +1,11 @@
-import { Home, ArrowRight } from "lucide-react";
+import { Car, Home, Package, PartyPopper, Shield, ArrowRight } from "lucide-react";
 
 const services = [
+  { icon: Car, name: "On-Demand Drivers", blurb: "Trips, airport runs, hourly driving" },
   { icon: Home, name: "Maids / Helpers", blurb: "Maids and helpers — cleaning, shifting" },
+  { icon: Package, name: "Delivery / Helper / Loader", blurb: "Delivery, lifting, moving help" },
+  { icon: PartyPopper, name: "Event Helpers", blurb: "Weddings, parties, setup and support" },
+  { icon: Shield, name: "Security Guards", blurb: "Guards, venues, residential security" },
 ];
 
 const Services = () => {
@@ -18,10 +22,11 @@ const Services = () => {
           </p>
         </div>
 
-        <div className="mt-12 max-w-md mx-auto grid grid-cols-1 gap-4 md:gap-5">
+        <div className="mt-12 mx-auto grid max-w-4xl grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 md:gap-5">
           {services.map(({ icon: Icon, name, blurb }) => (
             <button
               key={name}
+              type="button"
               className="group relative text-left rounded-2xl border border-border bg-card-gradient p-5 transition-smooth hover:border-teal hover:shadow-teal hover:-translate-y-1"
             >
               <div className="flex items-center justify-between">
