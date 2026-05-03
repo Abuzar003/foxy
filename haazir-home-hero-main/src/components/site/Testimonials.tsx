@@ -2,20 +2,20 @@ import { Star } from "lucide-react";
 
 const testimonials = [
   {
-    name: "Ayesha K.",
-    city: "Lahore",
+    name: "Priya S.",
+    city: "Mumbai",
     quote:
       "Booked an electrician at 9pm and he was at my door by 9:45. Professional, polite and the price was exactly what the app showed.",
   },
   {
-    name: "Bilal R.",
-    city: "Karachi",
+    name: "Rajesh K.",
+    city: "Bengaluru",
     quote:
       "Haazir's painter team transformed my apartment in two days. The scheduling and follow-up were flawless.",
   },
   {
-    name: "Sana M.",
-    city: "Islamabad",
+    name: "Ayesha M.",
+    city: "Delhi",
     quote:
       "I use Haazir every month for cleaning. Same trusted pro, easy reschedule, secure payments. 10/10.",
   },

@@ -1,14 +1,14 @@
 import { Zap, Wrench, Leaf, Car, Paintbrush, Snowflake, Sparkles, Hammer, ArrowRight } from "lucide-react";
 
 const services = [
-  { icon: Zap, name: "Electrician", price: "PKR 800" },
-  { icon: Wrench, name: "Plumber", price: "PKR 700" },
-  { icon: Leaf, name: "Gardener", price: "PKR 600" },
-  { icon: Car, name: "Driver", price: "PKR 1,200" },
-  { icon: Paintbrush, name: "Painter", price: "PKR 1,500" },
-  { icon: Snowflake, name: "AC Repair", price: "PKR 1,000" },
-  { icon: Sparkles, name: "Cleaning", price: "PKR 900" },
-  { icon: Hammer, name: "Carpenter", price: "PKR 850" },
+  { icon: Zap, name: "Electrician", price: "₹299" },
+  { icon: Wrench, name: "Plumber", price: "₹249" },
+  { icon: Leaf, name: "Gardener", price: "₹199" },
+  { icon: Car, name: "Driver", price: "₹449" },
+  { icon: Paintbrush, name: "Painter", price: "₹549" },
+  { icon: Snowflake, name: "AC Repair", price: "₹349" },
+  { icon: Sparkles, name: "Cleaning", price: "₹279" },
+  { icon: Hammer, name: "Carpenter", price: "₹259" },
 ];
 
 const Services = () => {

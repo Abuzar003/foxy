@@ -10,7 +10,7 @@ const channels = [
   {
     icon: Phone,
     title: "Call Us",
-    value: "+92 300 4422937",
+    value: "+91 80 4747 0101",
     note: "Avg pickup < 30 seconds",
   },
   {
@@ -44,7 +44,7 @@ const faqs = [
   },
   {
     q: "What payment methods are accepted?",
-    a: "We support cash on completion, all major debit/credit cards, JazzCash and Easypaisa — all secured end-to-end.",
+    a: "We support cash on completion, UPI, net banking, RuPay, and all major debit and credit cards — all secured end-to-end.",
   },
   {
     q: "What is the cancellation policy?",
@@ -52,7 +52,7 @@ const faqs = [
   },
   {
     q: "Which cities does Haazir cover?",
-    a: "We're live in Karachi, Lahore, Islamabad, Rawalpindi and Faisalabad — with new cities being added every month.",
+    a: "We're live in Mumbai, Delhi NCR, Bengaluru, Hyderabad, Pune, and Chennai — with new cities being added every month.",
   },
 ];
 

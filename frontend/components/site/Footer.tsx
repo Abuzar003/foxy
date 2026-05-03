@@ -78,7 +78,7 @@ const Footer = () => {
 
         <div className="mt-14 pt-6 border-t border-border flex flex-col md:flex-row gap-3 items-center justify-between text-xs text-muted-foreground">
           <p>© 2026 Haazir. All rights reserved.</p>
-          <p>Help is Haazir — Made with care in Pakistan.</p>
+          <p>Help is Haazir — Made with care in India.</p>
         </div>
       </div>
     </footer>
