@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Sparkles, Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { ThemeToggle } from "@/components/theme/ThemeToggle";
 
 const links = [
   { href: "#services", label: "Services" },
@@ -48,6 +49,7 @@ const Navbar = () => {
         </ul>
 
         <div className="hidden md:flex items-center gap-3">
+          <ThemeToggle />
           <Button asChild variant="ghost" className="text-foreground hover:text-primary">
             <Link href="/auth/signup/provider">Become a Provider</Link>
           </Button>
@@ -56,9 +58,12 @@ const Navbar = () => {
           </Button>
         </div>
 
-        <button className="md:hidden p-2 text-foreground" onClick={() => setOpen((v) => !v)} aria-label="Toggle menu">
-          {open ? <X /> : <Menu />}
-        </button>
+        <div className="flex items-center gap-1 md:hidden">
+          <ThemeToggle />
+          <button className="p-2 text-foreground" onClick={() => setOpen((v) => !v)} aria-label="Toggle menu">
+            {open ? <X /> : <Menu />}
+          </button>
+        </div>
       </nav>
 
       {open && (

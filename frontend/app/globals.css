@@ -29,7 +29,13 @@
 }
 
 @layer base {
+  /* Color tokens live on .theme-scope so React can toggle light/dark without fighting <html className>. */
   :root {
+    --radius: 0.875rem;
+    --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .theme-scope {
     --background: 220 25% 6%;
     --foreground: 40 30% 96%;
     --card: 220 22% 9%;
@@ -52,7 +58,6 @@
     --border: 220 18% 16%;
     --input: 220 18% 14%;
     --ring: 42 78% 58%;
-    --radius: 0.875rem;
     --gradient-hero: radial-gradient(ellipse at top, hsl(174 62% 42% / 0.18), transparent 60%),
       radial-gradient(ellipse at bottom right, hsl(42 78% 58% / 0.12), transparent 55%),
       linear-gradient(180deg, hsl(220 28% 8%), hsl(220 25% 5%));
@@ -62,10 +67,45 @@
     --shadow-gold: 0 12px 40px -12px hsl(42 78% 58% / 0.45);
     --shadow-teal: 0 12px 40px -12px hsl(174 62% 42% / 0.4);
     --shadow-soft: 0 8px 30px -10px hsl(220 50% 2% / 0.6);
-    --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
-  * {
+  /* Light mode: warm cream + golden accents */
+  .theme-scope.light {
+    --background: 40 30% 97%;
+    --foreground: 220 28% 11%;
+    --card: 0 0% 100%;
+    --card-foreground: 220 28% 11%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 220 28% 11%;
+    --primary: 36 82% 44%;
+    --primary-foreground: 40 40% 99%;
+    --primary-glow: 42 85% 58%;
+    --secondary: 174 55% 36%;
+    --secondary-foreground: 0 0% 100%;
+    --teal: 174 55% 36%;
+    --teal-glow: 174 60% 42%;
+    --muted: 220 14% 92%;
+    --muted-foreground: 220 12% 38%;
+    --accent: 174 50% 94%;
+    --accent-foreground: 174 55% 28%;
+    --destructive: 0 72% 48%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 220 14% 88%;
+    --input: 220 14% 90%;
+    --ring: 38 78% 48%;
+    --gradient-hero: radial-gradient(ellipse at top, hsl(174 55% 36% / 0.12), transparent 58%),
+      radial-gradient(ellipse at bottom right, hsl(38 78% 48% / 0.1), transparent 52%),
+      linear-gradient(180deg, hsl(40 28% 98%), hsl(220 12% 95%));
+    --gradient-gold: linear-gradient(135deg, hsl(36 82% 44%), hsl(40 88% 52%));
+    --gradient-teal: linear-gradient(135deg, hsl(174 55% 36%), hsl(174 62% 44%));
+    --gradient-card: linear-gradient(180deg, hsl(0 0% 100%), hsl(220 12% 97%));
+    --shadow-gold: 0 12px 36px -14px hsl(38 78% 48% / 0.28);
+    --shadow-teal: 0 12px 36px -14px hsl(174 55% 36% / 0.22);
+    --shadow-soft: 0 8px 28px -12px hsl(220 25% 20% / 0.1);
+  }
+
+  .theme-scope,
+  .theme-scope * {
     @apply border-border;
   }
 
@@ -74,7 +114,7 @@
   }
 
   body {
-    @apply bg-background text-foreground;
+    @apply min-h-full flex flex-col;
     font-feature-settings: "ss01", "cv11";
   }
 }

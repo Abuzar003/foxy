@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { getCustomerOffers, getProviderOffers } from "@/lib/offers";
+import { ThemeToggle } from "@/components/theme/ThemeToggle";
 
 type UserRole = "customer" | "provider" | null;
 
@@ -52,18 +53,22 @@ export function AppHeader() {
   if (hideHeader) return null;
 
   return (
-    <header className="sticky top-0 z-40 border-b border-slate-200/80 bg-white/80 backdrop-blur">
+    <header className="sticky top-0 z-40 border-b border-border/80 bg-background/85 backdrop-blur-xl">
       <div className="mx-auto flex h-14 w-full max-w-6xl items-center justify-between px-4 sm:px-6">
-        <Link href={role === "provider" ? "/provider/about" : "/providers/search"} className="text-sm font-semibold tracking-tight text-slate-900">
+        <Link
+          href={role === "provider" ? "/provider/about" : "/providers/search"}
+          className="text-sm font-bold tracking-tight text-gradient-gold"
+        >
           Haazir
         </Link>
 
         <div className="flex items-center gap-2">
+          <ThemeToggle />
           {isLoggedIn ? (
             <>
               <Link
                 href={inboxHref}
-                className="relative inline-flex items-center rounded-xl border border-slate-200 bg-white p-2 text-slate-700 shadow-sm transition hover:bg-slate-50"
+                className="relative inline-flex items-center rounded-xl border border-border bg-card p-2 text-muted-foreground shadow-sm transition-smooth hover:border-primary hover:text-foreground"
                 aria-label="Open inbox"
                 title="Open inbox"
               >
@@ -79,7 +84,7 @@ export function AppHeader() {
               </Link>
               <Link
                 href={aboutHref}
-                className="inline-flex items-center rounded-xl border border-slate-200 bg-white p-2 text-slate-700 shadow-sm transition hover:bg-slate-50"
+                className="inline-flex items-center rounded-xl border border-border bg-card p-2 text-muted-foreground shadow-sm transition-smooth hover:border-primary hover:text-foreground"
                 aria-label="Open profile"
                 title="Open profile"
               >
@@ -92,7 +97,7 @@ export function AppHeader() {
           ) : (
             <Link
               href="/auth/login"
-              className="rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-slate-50"
+              className="rounded-xl border border-border bg-card px-3 py-1.5 text-sm font-medium text-foreground shadow-sm transition-smooth hover:border-primary"
             >
               Login
             </Link>
