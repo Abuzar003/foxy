@@ -15,7 +15,7 @@ export default function ProviderSignupPage() {
 
           <p className="mt-5 text-center text-sm text-slate-600">
             Already have an account?{" "}
-            <Link href="/auth/login" className="font-medium text-slate-900 hover:text-sky-700">
+            <Link href="/auth/login/provider" className="font-medium text-slate-900 hover:text-sky-700">
               Sign in
             </Link>
           </p>

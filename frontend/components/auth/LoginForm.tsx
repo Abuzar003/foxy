@@ -33,9 +33,11 @@ interface LoginFormProps {
   onFieldFocus: (field: FocusField) => void;
   onFieldBlur?: () => void;
   onSubmitIntent?: () => void;
+  /** When set, only accounts with this role may complete sign-in (wrong role shows a clear message). */
+  expectedRole?: "customer" | "provider";
 }
 
-export function LoginForm({ onFieldFocus, onFieldBlur, onSubmitIntent }: LoginFormProps) {
+export function LoginForm({ onFieldFocus, onFieldBlur, onSubmitIntent, expectedRole }: LoginFormProps) {
   const [apiError, setApiError] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const router = useRouter();
@@ -58,6 +60,15 @@ export function LoginForm({ onFieldFocus, onFieldBlur, onSubmitIntent }: LoginFo
         method: "POST",
         body: data,
       });
+      if (expectedRole && response.user.role !== expectedRole) {
+        setApiError(
+          expectedRole === "provider"
+            ? "This account is not registered as a provider. Use customer sign-in, or create a provider account."
+            : "This account is not registered as a customer. Use provider sign-in, or create a customer account.",
+        );
+        return;
+      }
+
       localStorage.setItem("access_token", response.token.access_token);
       localStorage.setItem("user_role", response.user.role);
       localStorage.setItem("user_id", response.user.id);
@@ -76,9 +87,13 @@ export function LoginForm({ onFieldFocus, onFieldBlur, onSubmitIntent }: LoginFo
 
   return (
     <div className="rounded-2xl border border-slate-200/80 bg-white p-8 shadow-[0_20px_65px_rgba(15,23,42,0.14)] ring-1 ring-slate-100">
-      <h1 className="text-center text-2xl font-semibold tracking-tight text-slate-900">Welcome back</h1>
+      <h1 className="text-center text-2xl font-semibold tracking-tight text-slate-900">
+        {expectedRole === "provider" ? "Provider sign in" : "Welcome back"}
+      </h1>
       <p className="mt-1 text-center text-sm text-slate-500">
-        Sign in to continue booking or managing services.
+        {expectedRole === "provider"
+          ? "Sign in to manage your profile, inbox, and jobs."
+          : "Sign in to continue booking or managing services."}
       </p>
 
       <form onSubmit={handleSubmit(onSubmit)} className="mt-6 space-y-4">

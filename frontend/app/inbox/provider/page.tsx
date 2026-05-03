@@ -19,7 +19,7 @@ export default function ProviderInboxPage() {
     const role = localStorage.getItem("user_role");
     const token = localStorage.getItem("access_token");
     if (role !== "provider" || !token) {
-      router.replace("/auth/login");
+      router.replace("/auth/login/provider");
       return;
     }
     setToken(token);

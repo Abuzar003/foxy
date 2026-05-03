@@ -63,7 +63,7 @@ export default function ProviderAboutPage() {
     const role = localStorage.getItem("user_role");
 
     if (!token || role !== "provider") {
-      router.replace("/auth/login");
+      router.replace("/auth/login/provider");
       return;
     }
 
@@ -108,7 +108,7 @@ export default function ProviderAboutPage() {
 
       const token = localStorage.getItem("access_token");
       if (!token) {
-        router.replace("/auth/login");
+        router.replace("/auth/login/provider");
         return;
       }
 
