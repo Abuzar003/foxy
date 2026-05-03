@@ -90,7 +90,8 @@ export function LoginForm({
       if (response.user.role === "provider") {
         router.push("/provider/about");
       } else {
-        router.push("/providers/search");
+        const qs = typeof window !== "undefined" ? window.location.search : "";
+        router.push(`/providers/search${qs}`);
       }
     } catch (error) {
       const message =

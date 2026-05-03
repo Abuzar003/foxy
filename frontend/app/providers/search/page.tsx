@@ -80,8 +80,6 @@ function ProviderSearchInner() {
   const filtersWrapRef = useRef<HTMLDivElement>(null);
 
   const [taxonomy, setTaxonomy] = useState<Record<string, string[]>>({});
-  const [category, setCategory] = useState("");
-  const [service, setService] = useState("");
   const [serviceNeedInput, setServiceNeedInput] = useState("");
   const [address, setAddress] = useState("");
   const [maxPricePerHour, setMaxPricePerHour] = useState("");
@@ -186,8 +184,6 @@ function ProviderSearchInner() {
         svcParam = direct.service ?? "";
         catParam = direct.category ?? "";
         if (direct.address !== undefined) addrParam = direct.address.trim();
-        setService(svcParam);
-        setCategory(catParam);
       } else {
         const typed = serviceNeedInput.trim();
         if (!typed) {
@@ -205,8 +201,7 @@ function ProviderSearchInner() {
           svcParam = exact;
           catParam = categoryForCatalogService(taxonomy, exact);
         }
-        setService(svcParam);
-        setCategory(catParam);
+        if (svcParam) setServiceNeedInput(svcParam);
       }
 
       const params = new URLSearchParams();
@@ -485,52 +480,95 @@ function ProviderSearchInner() {
           Find <span className="text-gradient-gold">providers</span>
         </h1>
         <p className="mt-2 text-sm text-muted-foreground">
-          Search by service, category, location, and budget. Sign in as a customer to send offers or leave reviews
-          after a completed booking.
+          Search by service and city (same as the home page), plus optional budget caps. Sign in as a customer to
+          send offers or leave reviews after a completed booking.
         </p>
 
-        <section className="mt-8 rounded-2xl border border-border bg-background p-6 shadow-soft">
+        <section
+          ref={filtersWrapRef}
+          className="mt-8 rounded-2xl border border-border bg-background p-6 shadow-soft"
+        >
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-            <div>
-              <label className="mb-1.5 block text-sm font-medium text-foreground">Category</label>
-              <select
-                value={category}
-                onChange={(event) => setCategory(event.target.value)}
-                className={selectClass}
-              >
-                <option value="">All categories</option>
-                {Object.keys(taxonomy).map((item) => (
-                  <option key={item} value={item}>
-                    {item}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div>
+            <div className="relative lg:col-span-2">
               <label className="mb-1.5 block text-sm font-medium text-foreground">Service</label>
-              <select
-                value={service}
-                onChange={(event) => setService(event.target.value)}
-                className={selectClass}
-              >
-                <option value="">All services</option>
-                {(category ? servicesForCategory : Object.values(taxonomy).flat()).map((item) => (
-                  <option key={item} value={item}>
-                    {item}
-                  </option>
-                ))}
-              </select>
+              <Search className="pointer-events-none absolute left-3 top-[2.125rem] z-10 h-4 w-4 text-muted-foreground" />
+              <input
+                value={serviceNeedInput}
+                onChange={(event) => {
+                  setServiceNeedInput(event.target.value);
+                  setServiceSuggestOpen(true);
+                }}
+                onFocus={() => setServiceSuggestOpen(true)}
+                className={cn(inputClass, "pl-10")}
+                placeholder="What service do you need?"
+                autoComplete="off"
+                aria-autocomplete="list"
+                aria-expanded={serviceSuggestOpen}
+              />
+              {serviceSuggestOpen && serviceSuggestions.length > 0 ? (
+                <ul
+                  className="absolute left-0 right-0 top-full z-50 mt-1 max-h-56 overflow-auto rounded-xl border border-border bg-popover text-popover-foreground shadow-lg"
+                  role="listbox"
+                >
+                  {serviceSuggestions.map((s) => (
+                    <li key={s.service} role="option">
+                      <button
+                        type="button"
+                        className="flex w-full flex-col gap-0.5 px-3 py-2.5 text-left text-sm hover:bg-muted/80"
+                        onMouseDown={(e) => e.preventDefault()}
+                        onClick={() => {
+                          setServiceNeedInput(s.service);
+                          setServiceSuggestOpen(false);
+                        }}
+                      >
+                        <span className="font-medium text-foreground">{s.service}</span>
+                        <span className="text-xs text-muted-foreground">{s.category}</span>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              ) : null}
             </div>
 
-            <div>
-              <label className="mb-1.5 block text-sm font-medium text-foreground">Address</label>
+            <div className="relative">
+              <label className="mb-1.5 block text-sm font-medium text-foreground">City / area</label>
+              <MapPin className="pointer-events-none absolute left-3 top-[2.125rem] z-10 h-4 w-4 text-teal" />
               <input
                 value={address}
-                onChange={(event) => setAddress(event.target.value)}
-                className={inputClass}
-                placeholder="Area or city"
+                onChange={(event) => {
+                  setAddress(event.target.value);
+                  setCitySuggestOpen(true);
+                }}
+                onFocus={() => setCitySuggestOpen(true)}
+                className={cn(inputClass, "pl-10")}
+                placeholder="Your city"
+                autoComplete="off"
+                aria-autocomplete="list"
+                aria-expanded={citySuggestOpen}
               />
+              {citySuggestOpen && cityMatches.length > 0 ? (
+                <ul
+                  className="absolute left-0 right-0 top-full z-50 mt-1 max-h-56 overflow-auto rounded-xl border border-border bg-popover text-popover-foreground shadow-lg"
+                  role="listbox"
+                >
+                  {cityMatches.map((c) => (
+                    <li key={`${c.name}-${c.state}`} role="option">
+                      <button
+                        type="button"
+                        className="flex w-full flex-col gap-0.5 px-3 py-2.5 text-left text-sm hover:bg-muted/80"
+                        onMouseDown={(e) => e.preventDefault()}
+                        onClick={() => {
+                          setAddress(c.name);
+                          setCitySuggestOpen(false);
+                        }}
+                      >
+                        <span className="font-medium text-foreground">{c.name}</span>
+                        <span className="text-xs text-muted-foreground">{c.state}</span>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              ) : null}
             </div>
 
             <div>
@@ -571,12 +609,13 @@ function ProviderSearchInner() {
               type="button"
               variant="outline"
               onClick={() => {
-                setCategory("");
-                setService("");
+                setServiceNeedInput("");
                 setAddress("");
                 setMaxPricePerHour("");
                 setMaxPricePerDay("");
-                void searchProviders();
+                setServiceSuggestOpen(false);
+                setCitySuggestOpen(false);
+                void searchProviders({ service: "", category: "", address: "" });
               }}
               className="rounded-xl font-semibold"
             >
@@ -996,5 +1035,19 @@ function ProviderSearchInner() {
         </div>
       </div>
     </AuthShell>
+  );
+}
+
+export default function ProviderSearchPage() {
+  return (
+    <Suspense
+      fallback={
+        <AuthShell maxWidthClass="max-w-6xl">
+          <p className="p-8 text-sm text-muted-foreground">Loading search…</p>
+        </AuthShell>
+      }
+    >
+      <ProviderSearchInner />
+    </Suspense>
   );
 }

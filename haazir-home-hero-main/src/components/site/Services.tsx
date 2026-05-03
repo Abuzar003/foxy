@@ -8,13 +8,13 @@ const Services = () => {
   return (
     <section id="services" className="py-20 md:py-28">
       <div className="container">
-        <div className="max-w-2xl">
-          <span className="text-xs font-semibold uppercase tracking-widest text-teal">Service</span>
+        <div className="mx-auto max-w-2xl text-center">
+          <span className="text-xs font-semibold uppercase tracking-widest text-teal">Categories</span>
           <h2 className="mt-3 text-3xl md:text-4xl font-bold">
-            Haazir <span className="text-gradient-gold">launch</span> offering
+            Services available on <span className="text-gradient-gold">Haazir</span>
           </h2>
           <p className="mt-4 text-muted-foreground">
-            Every pro is background-checked and rated by real customers.
+            Every pro is background-checked and rated by real customers. Start with one of our launch offerings.
           </p>
         </div>
 
