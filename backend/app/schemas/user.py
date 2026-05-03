@@ -32,7 +32,20 @@ class CustomerCreate(UserCreateBase):
 
 class ProviderCreate(UserCreateBase):
     role: Literal["provider"] = "provider"
-    service_category: str = Field(min_length=2, max_length=100)
+    services: list[str] = Field(min_length=1, max_length=5)
+
+    @field_validator("services")
+    @classmethod
+    def validate_provider_signup_services(cls, value: list[str]) -> list[str]:
+        ordered_unique: list[str] = []
+        for service in value:
+            if service not in ALL_SERVICES:
+                raise ValueError(f"Invalid services: {service}")
+            if service not in ordered_unique:
+                ordered_unique.append(service)
+        if not ordered_unique:
+            raise ValueError("Select at least one service")
+        return ordered_unique
 
 
 class LoginRequest(BaseModel):
@@ -56,6 +69,7 @@ class UserResponse(BaseModel):
     role: Literal["customer", "provider"]
     phone: Optional[str] = None
     service_category: Optional[str] = None
+    services: list[str] = Field(default_factory=list)
     is_active: bool
     created_at: datetime
 

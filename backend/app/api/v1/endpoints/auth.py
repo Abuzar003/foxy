@@ -9,6 +9,7 @@ from app.api.dependencies import (
     get_user_repository,
 )
 from app.core.exceptions import NotFoundException, UnauthorizedException
+from app.core.service_taxonomy import category_for_service
 from app.repositories.user_repository import UserRepository
 from app.schemas.auth import (
     CustomerMobileResponse,
@@ -305,9 +306,15 @@ async def update_provider_about(
     if current_user.get("role") != "provider":
         raise UnauthorizedException("Only providers can update this page")
 
+    update_payload = payload.model_dump()
+    if update_payload.get("services"):
+        primary_category = category_for_service(update_payload["services"][0])
+        if primary_category:
+            update_payload["service_category"] = primary_category
+
     updated = await user_repo.update_provider_profile(
         current_user["user_id"],
-        payload.model_dump(),
+        update_payload,
     )
     if not updated:
         raise NotFoundException("Provider not found")

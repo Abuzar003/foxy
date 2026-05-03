@@ -15,7 +15,6 @@ interface BaseSignupPayload {
   phone: string;
   password: string;
   termsAccepted: boolean;
-  serviceCategory?: string;
 }
 
 export interface CustomerSignupPayload extends BaseSignupPayload {
@@ -58,6 +57,9 @@ export function SignupForm({ defaultRole = "customer", lockedRole }: SignupFormP
   const [customerTermsError, setCustomerTermsError] = useState("");
   const [providerTermsError, setProviderTermsError] = useState("");
   const [showTerms, setShowTerms] = useState(false);
+  const [signupTaxonomy, setSignupTaxonomy] = useState<Record<string, string[]>>({});
+  const [signupTaxonomyError, setSignupTaxonomyError] = useState("");
+  const [providerSignupServices, setProviderSignupServices] = useState<string[]>([]);
 
   const {
     register,
@@ -74,7 +76,6 @@ export function SignupForm({ defaultRole = "customer", lockedRole }: SignupFormP
       password: "",
       role: initialRole,
       termsAccepted: false,
-      serviceCategory: "",
     },
   });
 
@@ -82,7 +83,11 @@ export function SignupForm({ defaultRole = "customer", lockedRole }: SignupFormP
   const phone = watch("phone");
   const termsAccepted = watch("termsAccepted");
   const isPhoneValid = /^(?:\d{10}|\+[1-9]\d{9,14})$/.test(phone ?? "");
-  const canSubmit = isPhoneVerified && Boolean(termsAccepted);
+  const isProviderRole = (lockedRole ?? role) === "provider";
+  const canSubmit =
+    isPhoneVerified &&
+    Boolean(termsAccepted) &&
+    (!isProviderRole || providerSignupServices.length > 0);
   const activeTerms = role === "provider" ? providerTerms : customerTerms;
   const activeTermsError = role === "provider" ? providerTermsError : customerTermsError;
 
@@ -133,12 +138,46 @@ export function SignupForm({ defaultRole = "customer", lockedRole }: SignupFormP
     void loadTerms();
   }, [lockedRole]);
 
+  useEffect(() => {
+    if (role !== "provider") {
+      setProviderSignupServices([]);
+    }
+  }, [role]);
+
+  useEffect(() => {
+    if (!isProviderRole) return;
+    let cancelled = false;
+    void (async () => {
+      try {
+        const value = await apiRequest<{ categories: Record<string, string[]> }>("/providers/taxonomy");
+        if (!cancelled) {
+          setSignupTaxonomy(value.categories);
+          setSignupTaxonomyError("");
+        }
+      } catch (reason) {
+        if (!cancelled) {
+          const message =
+            reason instanceof ApiError ? reason.message : "Failed to load services list.";
+          setSignupTaxonomyError(message);
+          setSignupTaxonomy({});
+        }
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [isProviderRole]);
+
   const onSubmit = async (data: SignupPayload) => {
     try {
       setApiError("");
       setApiSuccess("");
 
       const role = lockedRole ?? data.role;
+      if (role === "provider" && providerSignupServices.length === 0) {
+        setApiError("Select at least one service you offer.");
+        return;
+      }
       const payload = {
         email: data.email,
         password: data.password,
@@ -146,7 +185,7 @@ export function SignupForm({ defaultRole = "customer", lockedRole }: SignupFormP
         phone: data.phone,
         terms_accepted: data.termsAccepted,
         role,
-        ...(role === "provider" ? { service_category: data.serviceCategory } : {}),
+        ...(role === "provider" ? { services: providerSignupServices } : {}),
       };
 
       const endpoint = role === "provider" ? "/auth/register/provider" : "/auth/register/customer";
@@ -436,23 +475,47 @@ export function SignupForm({ defaultRole = "customer", lockedRole }: SignupFormP
 
       {role === "provider" ? (
         <div>
-          <label htmlFor="serviceCategory" className="mb-1.5 block text-sm font-medium text-foreground">
-            Service category
-          </label>
-          <input
-            id="serviceCategory"
-            className={inputClass}
-            placeholder="Plumbing, Cleaning, Electrician..."
-            {...register("serviceCategory", {
-              validate: (value) => {
-                if (role !== "provider") return true;
-                if (!value || value.trim().length < 2) return "Service category is required";
-                return true;
-              },
-            })}
-          />
-          {errors.serviceCategory ? (
-            <p className="mt-1 text-xs text-destructive">{errors.serviceCategory.message}</p>
+          <label className="mb-1.5 block text-sm font-medium text-foreground">Services you offer</label>
+          <p className="mb-2 text-xs text-muted-foreground">
+            Choose any combination of the five launch services. You can change these later in your provider profile.
+          </p>
+          {signupTaxonomyError ? (
+            <p className="mb-2 text-xs text-destructive">{signupTaxonomyError}</p>
+          ) : null}
+          <div className="space-y-3 rounded-xl border border-border bg-muted/30 p-3.5">
+            {Object.keys(signupTaxonomy).length === 0 && !signupTaxonomyError ? (
+              <p className="text-sm text-muted-foreground">Loading services…</p>
+            ) : null}
+            {Object.entries(signupTaxonomy).map(([category, services]) => (
+              <div key={category} className="rounded-lg border border-border bg-background p-3">
+                <p className="mb-2 text-sm font-semibold text-foreground">{category}</p>
+                <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                  {services.map((service) => {
+                    const checked = providerSignupServices.includes(service);
+                    return (
+                      <label key={service} className="flex items-start gap-2 text-sm text-muted-foreground">
+                        <input
+                          type="checkbox"
+                          checked={checked}
+                          onChange={(event) => {
+                            setProviderSignupServices((prev) =>
+                              event.target.checked
+                                ? [...prev, service]
+                                : prev.filter((item) => item !== service),
+                            );
+                          }}
+                          className="mt-0.5 h-4 w-4 rounded border-border text-primary focus:ring-2 focus:ring-ring"
+                        />
+                        <span className="text-foreground">{service}</span>
+                      </label>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
+          </div>
+          {providerSignupServices.length === 0 && isPhoneVerified ? (
+            <p className="mt-1 text-xs text-destructive">Select at least one service to continue.</p>
           ) : null}
         </div>
       ) : null}

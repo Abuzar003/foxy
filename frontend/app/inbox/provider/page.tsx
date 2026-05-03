@@ -1,10 +1,29 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ApiError } from "@/lib/api";
 import { getProviderOffers, ServiceOffer, updateOfferStatus } from "@/lib/offers";
 import { getOfferMessages, sendOfferMessage, OfferMessage } from "@/lib/offerMessages";
+import { AuthShell } from "@/components/auth/AuthShell";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
+
+const linkClass = "font-medium text-primary transition-smooth hover:opacity-90";
+
+const inputClass =
+  "w-full rounded-xl border border-border bg-muted/50 px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground shadow-sm transition-smooth focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background";
+
+function statusBadgeClass(status: string) {
+  if (status === "accepted") {
+    return "border border-teal/40 bg-teal/15 text-teal";
+  }
+  if (status === "rejected") {
+    return "border border-destructive/30 bg-destructive/10 text-destructive";
+  }
+  return "border border-border bg-muted text-muted-foreground";
+}
 
 export default function ProviderInboxPage() {
   const router = useRouter();
@@ -17,14 +36,14 @@ export default function ProviderInboxPage() {
 
   const refreshOffers = async () => {
     const role = localStorage.getItem("user_role");
-    const token = localStorage.getItem("access_token");
-    if (role !== "provider" || !token) {
+    const t = localStorage.getItem("access_token");
+    if (role !== "provider" || !t) {
       router.replace("/auth/login/provider");
       return;
     }
-    setToken(token);
+    setToken(t);
     try {
-      const response = await getProviderOffers(undefined, token);
+      const response = await getProviderOffers(undefined, t);
       setOffers(response.offers);
     } catch (err) {
       const message = err instanceof ApiError ? err.message : "Failed to load provider inbox";
@@ -65,45 +84,52 @@ export default function ProviderInboxPage() {
   }, [offers, token]);
 
   return (
-    <main className="min-h-screen bg-gradient-to-b from-slate-50 via-white to-orange-50 px-6 py-12">
-      <div className="mx-auto w-full max-w-4xl">
-        <h1 className="text-2xl font-semibold tracking-tight text-slate-900">Provider Inbox</h1>
-        <p className="mt-1 text-sm text-slate-500">
-          Review incoming offers, accept/reject bids, and optionally send a message.
+    <AuthShell maxWidthClass="max-w-4xl">
+      <div className="rounded-2xl border border-border bg-card-gradient p-8 shadow-soft">
+        <span className="inline-flex items-center gap-2 rounded-full border border-border bg-muted/50 px-3 py-1 text-xs font-semibold uppercase tracking-widest text-teal">
+          Inbox
+        </span>
+        <h1 className="mt-4 text-2xl font-bold tracking-tight text-foreground md:text-3xl">
+          Provider <span className="text-gradient-gold">inbox</span>
+        </h1>
+        <p className="mt-2 text-sm text-muted-foreground">
+          Review incoming offers, accept or reject bids, and message customers when needed.
         </p>
-        {error ? <p className="mt-3 text-sm text-rose-600">{error}</p> : null}
+        {error ? <p className="mt-3 text-sm text-destructive">{error}</p> : null}
 
-        <section className="mt-6 space-y-3">
+        <section className="mt-8 space-y-4">
           {offers.map((offer) => (
             <article
               key={offer.id}
-              className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-[0_10px_35px_rgba(15,23,42,0.06)]"
+              className="rounded-2xl border border-border bg-background p-4 shadow-soft"
             >
               <div className="flex items-center justify-between gap-3">
-                <h2 className="text-sm font-semibold text-slate-900">{offer.customer_name}</h2>
+                <h2 className="text-sm font-semibold text-foreground">{offer.customer_name}</h2>
                 <span
-                  className={`rounded-full px-2.5 py-1 text-xs font-semibold ${
-                    offer.status === "accepted"
-                      ? "bg-emerald-100 text-emerald-700"
-                      : offer.status === "rejected"
-                        ? "bg-rose-100 text-rose-700"
-                        : "bg-amber-100 text-amber-700"
-                  }`}
+                  className={cn(
+                    "rounded-full px-2.5 py-1 text-xs font-semibold capitalize",
+                    statusBadgeClass(offer.status),
+                  )}
                 >
                   {offer.status}
                 </span>
               </div>
 
-              <p className="mt-1 text-sm text-slate-600">Service: {offer.service}</p>
-              <p className="mt-1 text-sm text-slate-600">
-                Bid: <span className="font-semibold text-slate-900">₹{offer.offered_price}</span> (base ₹
+              <p className="mt-1 text-sm text-muted-foreground">
+                Service: <span className="text-foreground">{offer.service}</span>
+              </p>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Bid:{" "}
+                <span className="font-semibold text-foreground">₹{offer.offered_price}</span> (base ₹
                 {offer.base_price})
               </p>
-              <p className="mt-1 text-sm text-slate-600">
+              <p className="mt-1 text-sm text-muted-foreground">
                 Schedule: {offer.total_days} day(s), {offer.total_hours} hour(s)
               </p>
               {offer.message ? (
-                <p className="mt-1 text-sm text-slate-600">Customer message: {offer.message}</p>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Customer message: <span className="text-foreground">{offer.message}</span>
+                </p>
               ) : null}
 
               {offer.status === "pending" ? (
@@ -114,65 +140,72 @@ export default function ProviderInboxPage() {
                     onChange={(event) =>
                       setReplyDrafts((prev) => ({ ...prev, [offer.id]: event.target.value }))
                     }
-                    className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm transition focus:border-orange-300 focus:outline-none focus:ring-4 focus:ring-orange-100"
+                    className={cn(inputClass, "min-h-[4.5rem] resize-y")}
                     placeholder="Optional message to customer"
                   />
-                  <div className="flex gap-2">
-                    <button
+                  <div className="flex flex-wrap gap-2">
+                    <Button
                       type="button"
+                      size="sm"
+                      className="rounded-xl bg-teal-gradient font-semibold text-secondary-foreground shadow-teal hover:opacity-90"
                       onClick={async () => {
-                        const token = localStorage.getItem("access_token");
-                        if (!token) return;
-                        await updateOfferStatus(offer.id, "accepted", token, replyDrafts[offer.id]);
+                        const t = localStorage.getItem("access_token");
+                        if (!t) return;
+                        await updateOfferStatus(offer.id, "accepted", t, replyDrafts[offer.id]);
                         await refreshOffers();
                       }}
-                      className="rounded-xl bg-emerald-600 px-3 py-2 text-sm font-semibold text-white transition hover:bg-emerald-700"
                     >
                       Accept
-                    </button>
-                    <button
+                    </Button>
+                    <Button
                       type="button"
+                      variant="destructive"
+                      size="sm"
+                      className="rounded-xl font-semibold"
                       onClick={async () => {
-                        const token = localStorage.getItem("access_token");
-                        if (!token) return;
-                        await updateOfferStatus(offer.id, "rejected", token, replyDrafts[offer.id]);
+                        const t = localStorage.getItem("access_token");
+                        if (!t) return;
+                        await updateOfferStatus(offer.id, "rejected", t, replyDrafts[offer.id]);
                         await refreshOffers();
                       }}
-                      className="rounded-xl bg-rose-600 px-3 py-2 text-sm font-semibold text-white transition hover:bg-rose-700"
                     >
                       Reject
-                    </button>
+                    </Button>
                   </div>
                 </div>
               ) : null}
 
               {offer.provider_reply ? (
-                <p className="mt-2 rounded-lg bg-slate-50 px-3 py-2 text-sm text-slate-700">
+                <p className="mt-2 rounded-lg border border-border bg-muted/50 px-3 py-2 text-sm text-foreground">
                   Your message: {offer.provider_reply}
                 </p>
               ) : null}
 
-              <div className="mt-3 space-y-2 rounded-xl border border-slate-200 bg-slate-50/70 p-3">
-                <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Messages</p>
+              <div className="mt-3 space-y-2 rounded-xl border border-border bg-muted/30 p-3">
+                <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                  Messages
+                </p>
                 {(threads[offer.id] ?? []).slice(-5).map((m, idx) => (
-                  <p key={`${offer.id}-msg-${idx}-${m.created_at}`} className="text-sm text-slate-700">
-                    <span className="font-semibold">
+                  <p key={`${offer.id}-msg-${idx}-${m.created_at}`} className="text-sm text-foreground">
+                    <span className="font-semibold text-muted-foreground">
                       {m.sender_role === "provider" ? "You" : "Customer"}:
                     </span>{" "}
                     {m.text}
                   </p>
                 ))}
-                <div className="flex gap-2">
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-stretch">
                   <input
                     value={messageDrafts[offer.id] ?? ""}
                     onChange={(event) =>
                       setMessageDrafts((prev) => ({ ...prev, [offer.id]: event.target.value }))
                     }
-                    className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm transition focus:border-orange-300 focus:outline-none focus:ring-4 focus:ring-orange-100"
+                    className={inputClass}
                     placeholder="Send optional message to customer"
                   />
-                  <button
+                  <Button
                     type="button"
+                    size="sm"
+                    className="shrink-0 rounded-xl bg-gold-gradient font-semibold text-primary-foreground shadow-gold hover:opacity-90 sm:h-auto sm:px-4"
                     onClick={async () => {
                       if (!token) return;
                       const text = messageDrafts[offer.id] ?? "";
@@ -181,27 +214,41 @@ export default function ProviderInboxPage() {
                       setMessageDrafts((prev) => ({ ...prev, [offer.id]: "" }));
                       await refreshThread(offer.id);
                     }}
-                    className="shrink-0 rounded-xl bg-slate-900 px-3 py-2 text-sm font-semibold text-white transition hover:bg-slate-800"
                   >
                     Send
-                  </button>
+                  </Button>
                 </div>
-                <button
+                <Button
                   type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="h-auto px-0 text-xs font-medium text-muted-foreground hover:text-foreground"
                   onClick={() => void refreshThread(offer.id)}
-                  className="text-xs font-medium text-slate-500 hover:text-slate-800"
                 >
                   Refresh messages
-                </button>
+                </Button>
               </div>
             </article>
           ))}
         </section>
 
         {offers.length === 0 ? (
-          <p className="mt-8 text-center text-sm text-slate-500">No offers in your inbox yet.</p>
+          <p className="mt-8 text-center text-sm text-muted-foreground">No offers in your inbox yet.</p>
         ) : null}
+
+        <div className="mt-8 space-y-3 border-t border-border pt-6 text-center text-sm text-muted-foreground">
+          <p>
+            <Link href="/provider/about" className={linkClass}>
+              Edit provider profile
+            </Link>
+          </p>
+          <p>
+            <Link href="/" className={linkClass}>
+              Back to home
+            </Link>
+          </p>
+        </div>
       </div>
-    </main>
+    </AuthShell>
   );
 }

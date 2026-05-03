@@ -1,9 +1,13 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { apiRequest, ApiError } from "@/lib/api";
+import { AuthShell } from "@/components/auth/AuthShell";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 interface ProviderAboutPayload {
   aadhaar_number: string;
@@ -31,6 +35,11 @@ interface ProviderAboutFormValues {
 interface ServiceTaxonomyResponse {
   categories: Record<string, string[]>;
 }
+
+const linkClass = "font-medium text-primary transition-smooth hover:opacity-90";
+
+const inputClass =
+  "w-full rounded-xl border border-border bg-muted/50 px-4 py-2.5 text-foreground placeholder:text-muted-foreground shadow-sm transition-smooth focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:cursor-not-allowed disabled:opacity-60 disabled:bg-muted/80";
 
 export default function ProviderAboutPage() {
   const router = useRouter();
@@ -142,29 +151,36 @@ export default function ProviderAboutPage() {
 
   if (isBootstrapping) {
     return (
-      <main className="flex min-h-screen items-center justify-center bg-slate-50 px-6 py-12">
-        <p className="text-sm text-slate-600">Loading provider profile...</p>
-      </main>
+      <AuthShell maxWidthClass="max-w-3xl">
+        <div className="rounded-2xl border border-border bg-card-gradient p-8 shadow-soft">
+          <p className="text-center text-sm text-muted-foreground">Loading provider profile…</p>
+        </div>
+      </AuthShell>
     );
   }
 
   return (
-    <main className="min-h-screen bg-gradient-to-b from-slate-50 via-white to-orange-50 px-6 py-12">
-      <div className="mx-auto w-full max-w-3xl rounded-2xl border border-slate-200/80 bg-white p-8 shadow-[0_20px_65px_rgba(15,23,42,0.12)] ring-1 ring-slate-100">
-        <h1 className="text-2xl font-semibold tracking-tight text-slate-900">Provider About</h1>
-        <p className="mt-1 text-sm text-slate-500">
-          Complete your profile so customers can trust and book your services.
+    <AuthShell maxWidthClass="max-w-3xl">
+      <div className="rounded-2xl border border-border bg-card-gradient p-8 shadow-soft">
+        <span className="inline-flex items-center gap-2 rounded-full border border-border bg-muted/50 px-3 py-1 text-xs font-semibold uppercase tracking-widest text-teal">
+          Provider profile
+        </span>
+        <h1 className="mt-4 text-2xl font-bold tracking-tight text-foreground md:text-3xl">
+          Your <span className="text-gradient-gold">about</span> and services
+        </h1>
+        <p className="mt-2 text-sm text-muted-foreground">
+          Complete your profile so customers can trust and book your services. Use the same details you would on signup.
         </p>
 
-        <form onSubmit={handleSubmit(onSubmit)} className="mt-6 space-y-4">
+        <form onSubmit={handleSubmit(onSubmit)} className="mt-8 space-y-4">
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div>
-              <label htmlFor="aadhaarNumber" className="mb-1.5 block text-sm font-medium text-slate-700">
+              <label htmlFor="aadhaarNumber" className="mb-1.5 block text-sm font-medium text-foreground">
                 Aadhaar number
               </label>
               <input
                 id="aadhaarNumber"
-                className="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-slate-900 shadow-sm transition focus:border-orange-300 focus:outline-none focus:ring-4 focus:ring-orange-100"
+                className={inputClass}
                 placeholder="123412341234"
                 {...register("aadhaarNumber", {
                   required: "Aadhaar number is required",
@@ -175,17 +191,17 @@ export default function ProviderAboutPage() {
                 })}
               />
               {errors.aadhaarNumber ? (
-                <p className="mt-1 text-xs text-rose-500">{errors.aadhaarNumber.message}</p>
+                <p className="mt-1 text-xs text-destructive">{errors.aadhaarNumber.message}</p>
               ) : null}
             </div>
 
             <div>
-              <label htmlFor="panCard" className="mb-1.5 block text-sm font-medium text-slate-700">
+              <label htmlFor="panCard" className="mb-1.5 block text-sm font-medium text-foreground">
                 PAN card (optional)
               </label>
               <input
                 id="panCard"
-                className="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 uppercase text-slate-900 shadow-sm transition focus:border-orange-300 focus:outline-none focus:ring-4 focus:ring-orange-100"
+                className={cn(inputClass, "uppercase")}
                 placeholder="ABCDE1234F"
                 {...register("panCard", {
                   validate: (value) => {
@@ -196,38 +212,44 @@ export default function ProviderAboutPage() {
                   },
                 })}
               />
-              {errors.panCard ? <p className="mt-1 text-xs text-rose-500">{errors.panCard.message}</p> : null}
+              {errors.panCard ? <p className="mt-1 text-xs text-destructive">{errors.panCard.message}</p> : null}
             </div>
           </div>
 
           <div>
-            <label htmlFor="address" className="mb-1.5 block text-sm font-medium text-slate-700">
+            <label htmlFor="address" className="mb-1.5 block text-sm font-medium text-foreground">
               Complete address
             </label>
             <textarea
               id="address"
               rows={3}
-              className="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-slate-900 shadow-sm transition focus:border-orange-300 focus:outline-none focus:ring-4 focus:ring-orange-100"
+              className={cn(inputClass, "min-h-[5.5rem] resize-y")}
               placeholder="House number, street, area, city, state, pincode"
               {...register("address", {
                 required: "Address is required",
                 minLength: { value: 10, message: "Address should be at least 10 characters" },
               })}
             />
-            {errors.address ? <p className="mt-1 text-xs text-rose-500">{errors.address.message}</p> : null}
+            {errors.address ? <p className="mt-1 text-xs text-destructive">{errors.address.message}</p> : null}
           </div>
 
           <div>
-            <label className="mb-1.5 block text-sm font-medium text-slate-700">Services</label>
-            <div className="space-y-3 rounded-xl border border-slate-200 bg-slate-50/70 p-3.5">
+            <label className="mb-1.5 block text-sm font-medium text-foreground">Services</label>
+            <p className="mb-2 text-xs text-muted-foreground">
+              Select every service you offer. These match what customers can search for.
+            </p>
+            <div className="space-y-3 rounded-xl border border-border bg-muted/30 p-3.5">
               {Object.entries(taxonomy).map(([category, services]) => (
-                <div key={category} className="rounded-lg border border-slate-200 bg-white p-3">
-                  <p className="mb-2 text-sm font-semibold text-slate-800">{category}</p>
+                <div key={category} className="rounded-lg border border-border bg-background p-3">
+                  <p className="mb-2 text-sm font-semibold text-foreground">{category}</p>
                   <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                     {services.map((service) => {
                       const checked = selectedServices.includes(service);
                       return (
-                        <label key={service} className="flex items-start gap-2 text-sm text-slate-600">
+                        <label
+                          key={service}
+                          className="flex items-start gap-2 text-sm text-muted-foreground"
+                        >
                           <input
                             type="checkbox"
                             checked={checked}
@@ -238,9 +260,9 @@ export default function ProviderAboutPage() {
                                   : prev.filter((item) => item !== service),
                               );
                             }}
-                            className="mt-0.5 h-4 w-4 rounded border-slate-300 text-slate-900 focus:ring-2 focus:ring-orange-300"
+                            className="mt-0.5 h-4 w-4 rounded border-border text-primary focus:ring-2 focus:ring-ring focus:ring-offset-0"
                           />
-                          <span>{service}</span>
+                          <span className="text-foreground">{service}</span>
                         </label>
                       );
                     })}
@@ -249,13 +271,13 @@ export default function ProviderAboutPage() {
               ))}
             </div>
             {selectedServices.length === 0 ? (
-              <p className="mt-1 text-xs text-rose-500">Select at least one service.</p>
+              <p className="mt-1 text-xs text-destructive">Select at least one service.</p>
             ) : null}
           </div>
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div>
-              <label htmlFor="pricePerDay" className="mb-1.5 block text-sm font-medium text-slate-700">
+              <label htmlFor="pricePerDay" className="mb-1.5 block text-sm font-medium text-foreground">
                 Price per day
               </label>
               <input
@@ -263,7 +285,7 @@ export default function ProviderAboutPage() {
                 type="number"
                 step="0.01"
                 min="1"
-                className="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-slate-900 shadow-sm transition focus:border-orange-300 focus:outline-none focus:ring-4 focus:ring-orange-100"
+                className={inputClass}
                 placeholder="1200"
                 {...register("pricePerDay", {
                   valueAsNumber: true,
@@ -271,12 +293,12 @@ export default function ProviderAboutPage() {
                 })}
               />
               {errors.pricePerDay ? (
-                <p className="mt-1 text-xs text-rose-500">{errors.pricePerDay.message}</p>
+                <p className="mt-1 text-xs text-destructive">{errors.pricePerDay.message}</p>
               ) : null}
             </div>
 
             <div>
-              <label htmlFor="pricePerHour" className="mb-1.5 block text-sm font-medium text-slate-700">
+              <label htmlFor="pricePerHour" className="mb-1.5 block text-sm font-medium text-foreground">
                 Price per hour
               </label>
               <input
@@ -284,7 +306,7 @@ export default function ProviderAboutPage() {
                 type="number"
                 step="0.01"
                 min="1"
-                className="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-slate-900 shadow-sm transition focus:border-orange-300 focus:outline-none focus:ring-4 focus:ring-orange-100"
+                className={inputClass}
                 placeholder="250"
                 {...register("pricePerHour", {
                   valueAsNumber: true,
@@ -292,18 +314,18 @@ export default function ProviderAboutPage() {
                 })}
               />
               {errors.pricePerHour ? (
-                <p className="mt-1 text-xs text-rose-500">{errors.pricePerHour.message}</p>
+                <p className="mt-1 text-xs text-destructive">{errors.pricePerHour.message}</p>
               ) : null}
             </div>
           </div>
 
           <div>
-            <label htmlFor="profilePhoto" className="mb-1.5 block text-sm font-medium text-slate-700">
+            <label htmlFor="profilePhoto" className="mb-1.5 block text-sm font-medium text-foreground">
               Profile photo URL
             </label>
             <input
               id="profilePhoto"
-              className="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-slate-900 shadow-sm transition focus:border-orange-300 focus:outline-none focus:ring-4 focus:ring-orange-100"
+              className={inputClass}
               placeholder="https://example.com/photo.jpg"
               {...register("profilePhoto", {
                 required: "Profile photo URL is required",
@@ -311,29 +333,29 @@ export default function ProviderAboutPage() {
               })}
             />
             {errors.profilePhoto ? (
-              <p className="mt-1 text-xs text-rose-500">{errors.profilePhoto.message}</p>
+              <p className="mt-1 text-xs text-destructive">{errors.profilePhoto.message}</p>
             ) : null}
           </div>
 
           <div>
-            <label htmlFor="about" className="mb-1.5 block text-sm font-medium text-slate-700">
+            <label htmlFor="about" className="mb-1.5 block text-sm font-medium text-foreground">
               About
             </label>
             <textarea
               id="about"
               rows={4}
-              className="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-slate-900 shadow-sm transition focus:border-orange-300 focus:outline-none focus:ring-4 focus:ring-orange-100"
+              className={cn(inputClass, "min-h-[7rem] resize-y")}
               placeholder="Tell customers about your experience and quality standards."
               {...register("about", {
                 required: "About section is required",
                 minLength: { value: 10, message: "About must be at least 10 characters" },
               })}
             />
-            {errors.about ? <p className="mt-1 text-xs text-rose-500">{errors.about.message}</p> : null}
+            {errors.about ? <p className="mt-1 text-xs text-destructive">{errors.about.message}</p> : null}
           </div>
 
           <div>
-            <label htmlFor="age" className="mb-1.5 block text-sm font-medium text-slate-700">
+            <label htmlFor="age" className="mb-1.5 block text-sm font-medium text-foreground">
               Age
             </label>
             <input
@@ -341,7 +363,7 @@ export default function ProviderAboutPage() {
               type="number"
               min="18"
               max="100"
-              className="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-slate-900 shadow-sm transition focus:border-orange-300 focus:outline-none focus:ring-4 focus:ring-orange-100"
+              className={inputClass}
               placeholder="28"
               {...register("age", {
                 valueAsNumber: true,
@@ -349,21 +371,36 @@ export default function ProviderAboutPage() {
                 max: { value: 100, message: "Age cannot exceed 100" },
               })}
             />
-            {errors.age ? <p className="mt-1 text-xs text-rose-500">{errors.age.message}</p> : null}
+            {errors.age ? <p className="mt-1 text-xs text-destructive">{errors.age.message}</p> : null}
           </div>
 
-          <button
+          <Button
             type="submit"
             disabled={isSubmitting || selectedServices.length === 0}
-            className="w-full rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-70"
+            className="h-11 w-full rounded-xl bg-gold-gradient text-sm font-semibold text-primary-foreground shadow-gold transition-smooth hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
           >
-            {isSubmitting ? "Saving profile..." : "Save provider profile"}
-          </button>
+            {isSubmitting ? "Saving profile…" : "Save provider profile"}
+          </Button>
 
-          {apiError ? <p className="text-center text-sm text-rose-600">{apiError}</p> : null}
-          {apiSuccess ? <p className="text-center text-sm text-emerald-600">{apiSuccess}</p> : null}
+          {apiError ? <p className="text-center text-sm text-destructive">{apiError}</p> : null}
+          {apiSuccess ? (
+            <p className="text-center text-sm font-medium text-teal">{apiSuccess}</p>
+          ) : null}
         </form>
+
+        <div className="mt-8 space-y-3 border-t border-border pt-6 text-center text-sm text-muted-foreground">
+          <p>
+            <Link href="/inbox/provider" className={linkClass}>
+              Provider inbox
+            </Link>
+          </p>
+          <p>
+            <Link href="/" className={linkClass}>
+              Back to home
+            </Link>
+          </p>
+        </div>
       </div>
-    </main>
+    </AuthShell>
   );
 }

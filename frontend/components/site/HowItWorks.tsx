@@ -1,7 +1,7 @@
 import { ListChecks, CalendarClock, UserCheck, Smile } from "lucide-react";
 
 const steps = [
-  { icon: ListChecks, title: "Choose a service", desc: "Pick what you need from 50+ categories." },
+  { icon: ListChecks, title: "Choose a service", desc: "Drivers, maids, delivery, events, or security guards." },
   { icon: CalendarClock, title: "Pick a time", desc: "Book instantly or schedule for later." },
   { icon: UserCheck, title: "Get matched", desc: "A verified pro is assigned in minutes." },
   { icon: Smile, title: "Relax & rate", desc: "Job done, pay securely, leave a review." },

@@ -1,8 +1,19 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { apiRequest, ApiError } from "@/lib/api";
 import { createOffer, getCustomerOffers } from "@/lib/offers";
+import { AuthShell } from "@/components/auth/AuthShell";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
+
+const linkClass = "font-medium text-primary transition-smooth hover:opacity-90";
+
+const inputClass =
+  "w-full rounded-xl border border-border bg-muted/50 px-4 py-2.5 text-sm text-foreground shadow-sm transition-smooth focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background";
+
+const selectClass = inputClass;
 
 interface ServiceTaxonomyResponse {
   categories: Record<string, string[]>;
@@ -351,21 +362,27 @@ export default function ProviderSearchPage() {
   };
 
   return (
-    <main className="min-h-screen bg-gradient-to-b from-slate-50 via-white to-sky-50 px-6 py-12">
-      <div className="mx-auto w-full max-w-6xl">
-        <h1 className="text-2xl font-semibold tracking-tight text-slate-900">Find Providers</h1>
-        <p className="mt-1 text-sm text-slate-500">
-          Search providers by service, category, location, and budget.
+    <AuthShell maxWidthClass="max-w-6xl">
+      <div className="rounded-2xl border border-border bg-card-gradient p-8 shadow-soft">
+        <span className="inline-flex items-center gap-2 rounded-full border border-border bg-muted/50 px-3 py-1 text-xs font-semibold uppercase tracking-widest text-teal">
+          Search
+        </span>
+        <h1 className="mt-4 text-2xl font-bold tracking-tight text-foreground md:text-3xl">
+          Find <span className="text-gradient-gold">providers</span>
+        </h1>
+        <p className="mt-2 text-sm text-muted-foreground">
+          Search by service, category, location, and budget. Sign in as a customer to send offers or leave reviews
+          after a completed booking.
         </p>
 
-        <section className="mt-6 rounded-2xl border border-slate-200/80 bg-white p-6 shadow-[0_14px_45px_rgba(15,23,42,0.08)]">
+        <section className="mt-8 rounded-2xl border border-border bg-background p-6 shadow-soft">
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
             <div>
-              <label className="mb-1.5 block text-sm font-medium text-slate-700">Category</label>
+              <label className="mb-1.5 block text-sm font-medium text-foreground">Category</label>
               <select
                 value={category}
                 onChange={(event) => setCategory(event.target.value)}
-                className="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-slate-900 shadow-sm transition focus:border-sky-400 focus:outline-none focus:ring-4 focus:ring-sky-100"
+                className={selectClass}
               >
                 <option value="">All categories</option>
                 {Object.keys(taxonomy).map((item) => (
@@ -377,11 +394,11 @@ export default function ProviderSearchPage() {
             </div>
 
             <div>
-              <label className="mb-1.5 block text-sm font-medium text-slate-700">Service</label>
+              <label className="mb-1.5 block text-sm font-medium text-foreground">Service</label>
               <select
                 value={service}
                 onChange={(event) => setService(event.target.value)}
-                className="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-slate-900 shadow-sm transition focus:border-sky-400 focus:outline-none focus:ring-4 focus:ring-sky-100"
+                className={selectClass}
               >
                 <option value="">All services</option>
                 {(category ? servicesForCategory : Object.values(taxonomy).flat()).map((item) => (
@@ -393,51 +410,52 @@ export default function ProviderSearchPage() {
             </div>
 
             <div>
-              <label className="mb-1.5 block text-sm font-medium text-slate-700">Address</label>
+              <label className="mb-1.5 block text-sm font-medium text-foreground">Address</label>
               <input
                 value={address}
                 onChange={(event) => setAddress(event.target.value)}
-                className="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-slate-900 shadow-sm transition focus:border-sky-400 focus:outline-none focus:ring-4 focus:ring-sky-100"
+                className={inputClass}
                 placeholder="Area or city"
               />
             </div>
 
             <div>
-              <label className="mb-1.5 block text-sm font-medium text-slate-700">Max price/hour</label>
+              <label className="mb-1.5 block text-sm font-medium text-foreground">Max price/hour</label>
               <input
                 type="number"
                 min="1"
                 value={maxPricePerHour}
                 onChange={(event) => setMaxPricePerHour(event.target.value)}
-                className="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-slate-900 shadow-sm transition focus:border-sky-400 focus:outline-none focus:ring-4 focus:ring-sky-100"
+                className={inputClass}
                 placeholder="500"
               />
             </div>
 
             <div>
-              <label className="mb-1.5 block text-sm font-medium text-slate-700">Max price/day</label>
+              <label className="mb-1.5 block text-sm font-medium text-foreground">Max price/day</label>
               <input
                 type="number"
                 min="1"
                 value={maxPricePerDay}
                 onChange={(event) => setMaxPricePerDay(event.target.value)}
-                className="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-slate-900 shadow-sm transition focus:border-sky-400 focus:outline-none focus:ring-4 focus:ring-sky-100"
+                className={inputClass}
                 placeholder="3000"
               />
             </div>
           </div>
 
           <div className="mt-4 flex flex-wrap gap-2">
-            <button
+            <Button
               type="button"
               onClick={() => void searchProviders()}
               disabled={isSearching}
-              className="rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-70"
+              className="rounded-xl bg-gold-gradient font-semibold text-primary-foreground shadow-gold transition-smooth hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
             >
-              {isSearching ? "Searching..." : "Search providers"}
-            </button>
-            <button
+              {isSearching ? "Searching…" : "Search providers"}
+            </Button>
+            <Button
               type="button"
+              variant="outline"
               onClick={() => {
                 setCategory("");
                 setService("");
@@ -446,39 +464,41 @@ export default function ProviderSearchPage() {
                 setMaxPricePerDay("");
                 void searchProviders();
               }}
-              className="rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+              className="rounded-xl font-semibold"
             >
               Reset
-            </button>
+            </Button>
           </div>
         </section>
 
-        {error ? <p className="mt-4 text-sm text-rose-600">{error}</p> : null}
+        {error ? <p className="mt-4 text-sm text-destructive">{error}</p> : null}
 
-        <section className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-2">
+        <section className="mt-8 grid grid-cols-1 gap-4 md:grid-cols-2">
           {providers.map((provider) => (
             <article
               key={provider.id}
-              className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-[0_10px_35px_rgba(15,23,42,0.07)]"
+              className="rounded-2xl border border-border bg-background p-5 shadow-soft"
             >
               <div className="flex items-start gap-4">
                 {provider.profile_photo ? (
                   <img
                     src={provider.profile_photo}
                     alt={provider.full_name}
-                    className="h-14 w-14 rounded-full object-cover ring-1 ring-slate-200"
+                    className="h-14 w-14 rounded-full object-cover ring-1 ring-border"
                   />
                 ) : (
-                  <div className="flex h-14 w-14 items-center justify-center rounded-full bg-slate-100 text-sm font-semibold text-slate-500 ring-1 ring-slate-200">
+                  <div className="flex h-14 w-14 items-center justify-center rounded-full bg-muted text-sm font-semibold text-muted-foreground ring-1 ring-border">
                     {provider.full_name?.slice(0, 2).toUpperCase() || "PR"}
                   </div>
                 )}
                 <div className="min-w-0 flex-1">
-                  <h2 className="truncate text-lg font-semibold text-slate-900">{provider.full_name}</h2>
-                  <p className="mt-0.5 text-sm text-slate-500">{provider.address || "Address not shared"}</p>
-                  <p className="mt-1 text-xs text-slate-500">
+                  <h2 className="truncate text-lg font-semibold text-foreground">{provider.full_name}</h2>
+                  <p className="mt-0.5 text-sm text-muted-foreground">
+                    {provider.address || "Address not shared"}
+                  </p>
+                  <p className="mt-1 text-xs text-muted-foreground">
                     Rating:{" "}
-                    <span className="font-semibold text-slate-800">
+                    <span className="font-semibold text-foreground">
                       {provider.rating_average ? provider.rating_average.toFixed(1) : "N/A"}
                     </span>{" "}
                     ({provider.rating_count ?? 0} reviews)
@@ -490,7 +510,7 @@ export default function ProviderSearchPage() {
                 {provider.services.map((item) => (
                   <span
                     key={`${provider.id}-${item}`}
-                    className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-700"
+                    className="rounded-full border border-border bg-muted/60 px-2.5 py-1 text-xs font-medium text-foreground"
                   >
                     {item}
                   </span>
@@ -498,29 +518,34 @@ export default function ProviderSearchPage() {
               </div>
 
               <div className="mt-4 grid grid-cols-2 gap-2 text-sm">
-                <p className="text-slate-600">
+                <p className="text-muted-foreground">
                   Hourly:{" "}
-                  <span className="font-semibold text-slate-900">
+                  <span className="font-semibold text-foreground">
                     {provider.price_per_hour ? `₹${provider.price_per_hour}` : "N/A"}
                   </span>
                 </p>
-                <p className="text-slate-600">
+                <p className="text-muted-foreground">
                   Daily:{" "}
-                  <span className="font-semibold text-slate-900">
+                  <span className="font-semibold text-foreground">
                     {provider.price_per_day ? `₹${provider.price_per_day}` : "N/A"}
                   </span>
                 </p>
-                <p className="col-span-2 text-slate-600">
-                  Age: <span className="font-semibold text-slate-900">{provider.age ?? "N/A"}</span>
+                <p className="col-span-2 text-muted-foreground">
+                  Age: <span className="font-semibold text-foreground">{provider.age ?? "N/A"}</span>
                 </p>
               </div>
 
-              {provider.about ? <p className="mt-3 text-sm text-slate-600">{provider.about}</p> : null}
+              {provider.about ? (
+                <p className="mt-3 text-sm text-muted-foreground">{provider.about}</p>
+              ) : null}
 
-              <div className="mt-4 border-t border-slate-200 pt-4">
+              <div className="mt-4 border-t border-border pt-4">
                 <div className="mb-3">
-                  <button
+                  <Button
                     type="button"
+                    variant="outline"
+                    size="sm"
+                    className="rounded-xl font-semibold"
                     onClick={() => {
                       setActiveOfferProviderId((prev) => (prev === provider.id ? null : provider.id));
                       if (!offerPrice[provider.id]) {
@@ -534,23 +559,22 @@ export default function ProviderSearchPage() {
                         setOfferScheduleType((prev) => ({ ...prev, [provider.id]: "single" }));
                       }
                     }}
-                    className="rounded-xl border border-slate-300 bg-white px-3 py-1.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
                   >
                     {activeOfferProviderId === provider.id ? "Close offer" : "Bid / Send Offer"}
-                  </button>
+                  </Button>
                 </div>
 
                 {activeOfferProviderId === provider.id ? (
-                  <div className="mb-4 space-y-3 rounded-xl border border-slate-200 bg-slate-50/70 p-3.5">
+                  <div className="mb-4 space-y-3 rounded-xl border border-border bg-muted/30 p-3.5">
                     <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                       <div>
-                        <label className="mb-1 block text-xs font-semibold text-slate-600">Service</label>
+                        <label className="mb-1 block text-xs font-semibold text-muted-foreground">Service</label>
                         <select
                           value={offerService[provider.id] ?? ""}
                           onChange={(event) =>
                             setOfferService((prev) => ({ ...prev, [provider.id]: event.target.value }))
                           }
-                          className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm transition focus:border-sky-400 focus:outline-none focus:ring-4 focus:ring-sky-100"
+                          className={selectClass}
                         >
                           {provider.services.map((s) => (
                             <option key={`${provider.id}-${s}`} value={s}>
@@ -560,7 +584,7 @@ export default function ProviderSearchPage() {
                         </select>
                       </div>
                       <div>
-                        <label className="mb-1 block text-xs font-semibold text-slate-600">
+                        <label className="mb-1 block text-xs font-semibold text-muted-foreground">
                           Your bid (minimum ₹{provider.price_per_hour ?? provider.price_per_day ?? 1})
                         </label>
                         <input
@@ -570,12 +594,14 @@ export default function ProviderSearchPage() {
                           onChange={(event) =>
                             setOfferPrice((prev) => ({ ...prev, [provider.id]: event.target.value }))
                           }
-                          className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm transition focus:border-sky-400 focus:outline-none focus:ring-4 focus:ring-sky-100"
+                          className={inputClass}
                         />
                       </div>
                     </div>
                     <div>
-                      <label className="mb-1 block text-xs font-semibold text-slate-600">Schedule type</label>
+                      <label className="mb-1 block text-xs font-semibold text-muted-foreground">
+                        Schedule type
+                      </label>
                       <select
                         value={offerScheduleType[provider.id] ?? "single"}
                         onChange={(event) =>
@@ -584,7 +610,7 @@ export default function ProviderSearchPage() {
                             [provider.id]: event.target.value as "single" | "multi",
                           }))
                         }
-                        className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm transition focus:border-sky-400 focus:outline-none focus:ring-4 focus:ring-sky-100"
+                        className={selectClass}
                       >
                         <option value="single">Single date</option>
                         <option value="multi">Multiple dates</option>
@@ -600,14 +626,14 @@ export default function ProviderSearchPage() {
                           onChange={(event) =>
                             setOfferDate((prev) => ({ ...prev, [provider.id]: event.target.value }))
                           }
-                          className="rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm transition focus:border-sky-400 focus:outline-none focus:ring-4 focus:ring-sky-100"
+                          className={inputClass}
                         />
                         <select
                           value={offerStartTime[provider.id] ?? ""}
                           onChange={(event) =>
                             setOfferStartTime((prev) => ({ ...prev, [provider.id]: event.target.value }))
                           }
-                          className="rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm transition focus:border-sky-400 focus:outline-none focus:ring-4 focus:ring-sky-100"
+                          className={selectClass}
                         >
                           <option value="">Start time</option>
                           {timeOptions.map((slot) => (
@@ -621,7 +647,7 @@ export default function ProviderSearchPage() {
                           onChange={(event) =>
                             setOfferEndTime((prev) => ({ ...prev, [provider.id]: event.target.value }))
                           }
-                          className="rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm transition focus:border-sky-400 focus:outline-none focus:ring-4 focus:ring-sky-100"
+                          className={selectClass}
                         >
                           <option value="">End time</option>
                           {timeOptions.map((slot) => (
@@ -632,7 +658,7 @@ export default function ProviderSearchPage() {
                         </select>
                       </div>
                     ) : (
-                      <div className="space-y-2 rounded-xl border border-slate-200 bg-white p-2.5">
+                      <div className="space-y-2 rounded-xl border border-border bg-background p-2.5">
                         {(offerSlots[provider.id] ?? []).map((slot, idx) => (
                           <div key={`${provider.id}-slot-${idx}`} className="grid grid-cols-1 gap-2 sm:grid-cols-3">
                             <input
@@ -646,7 +672,7 @@ export default function ProviderSearchPage() {
                                   return { ...prev, [provider.id]: next };
                                 })
                               }
-                              className="rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm transition focus:border-sky-400 focus:outline-none focus:ring-4 focus:ring-sky-100"
+                              className={inputClass}
                             />
                             <select
                               value={slot.start_time}
@@ -657,7 +683,7 @@ export default function ProviderSearchPage() {
                                   return { ...prev, [provider.id]: next };
                                 })
                               }
-                              className="rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm transition focus:border-sky-400 focus:outline-none focus:ring-4 focus:ring-sky-100"
+                              className={selectClass}
                             >
                               <option value="">Start time</option>
                               {timeOptions.map((opt) => (
@@ -675,7 +701,7 @@ export default function ProviderSearchPage() {
                                   return { ...prev, [provider.id]: next };
                                 })
                               }
-                              className="rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm transition focus:border-sky-400 focus:outline-none focus:ring-4 focus:ring-sky-100"
+                              className={selectClass}
                             >
                               <option value="">End time</option>
                               {timeOptions.map((opt) => (
@@ -686,8 +712,11 @@ export default function ProviderSearchPage() {
                             </select>
                           </div>
                         ))}
-                        <button
+                        <Button
                           type="button"
+                          variant="outline"
+                          size="sm"
+                          className="rounded-xl text-xs font-semibold"
                           onClick={() =>
                             setOfferSlots((prev) => ({
                               ...prev,
@@ -697,10 +726,9 @@ export default function ProviderSearchPage() {
                               ],
                             }))
                           }
-                          className="rounded-xl border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-50"
                         >
                           Add slot
-                        </button>
+                        </Button>
                       </div>
                     )}
                     <textarea
@@ -709,50 +737,52 @@ export default function ProviderSearchPage() {
                       onChange={(event) =>
                         setOfferMessage((prev) => ({ ...prev, [provider.id]: event.target.value }))
                       }
-                      className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm transition focus:border-sky-400 focus:outline-none focus:ring-4 focus:ring-sky-100"
+                      className={cn(inputClass, "min-h-[4.5rem] resize-y")}
                       placeholder="Optional message for provider"
                     />
-                    <button
+                    <Button
                       type="button"
                       onClick={() => void submitOffer(provider)}
-                      className="w-full rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800"
+                      className="w-full rounded-xl bg-teal-gradient font-semibold text-secondary-foreground shadow-teal hover:opacity-90"
                     >
                       Send offer
-                    </button>
+                    </Button>
                   </div>
                 ) : null}
 
                 {offerStatus[provider.id] ? (
-                  <p className="mb-3 text-xs text-slate-600">{offerStatus[provider.id]}</p>
+                  <p className="mb-3 text-xs text-muted-foreground">{offerStatus[provider.id]}</p>
                 ) : null}
 
-                <button
+                <Button
                   type="button"
+                  variant="outline"
+                  size="sm"
+                  className="rounded-xl font-semibold"
                   onClick={() => {
                     if (!eligibleReviewProviderIds.has(provider.id)) return;
                     setActiveFeedbackProviderId((prev) => (prev === provider.id ? null : provider.id));
                     void loadProviderReviews(provider.id);
                   }}
                   disabled={!eligibleReviewProviderIds.has(provider.id)}
-                  className="rounded-xl border border-slate-300 bg-white px-3 py-1.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   {eligibleReviewProviderIds.has(provider.id)
                     ? activeFeedbackProviderId === provider.id
                       ? "Close feedback"
                       : "Give feedback"
                     : "Feedback after service"}
-                </button>
+                </Button>
 
                 {!eligibleReviewProviderIds.has(provider.id) ? (
-                  <p className="mt-2 text-xs text-slate-500">
+                  <p className="mt-2 text-xs text-muted-foreground">
                     Feedback is enabled only after your service is completed with this provider.
                   </p>
                 ) : null}
 
                 {activeFeedbackProviderId === provider.id ? (
-                  <div className="mt-3 space-y-3 rounded-xl border border-slate-200 bg-slate-50/70 p-3.5">
+                  <div className="mt-3 space-y-3 rounded-xl border border-border bg-muted/30 p-3.5">
                     <div>
-                      <p className="mb-1.5 text-sm font-medium text-slate-700">Rate this provider</p>
+                      <p className="mb-1.5 text-sm font-medium text-foreground">Rate this provider</p>
                       <div className="flex items-center gap-1">
                         {[1, 2, 3, 4, 5].map((star) => {
                           const selected = (feedbackDrafts[provider.id]?.rating ?? 0) >= star;
@@ -761,9 +791,12 @@ export default function ProviderSearchPage() {
                               key={star}
                               type="button"
                               onClick={() => updateFeedbackDraft(provider.id, { rating: star })}
-                              className={`rounded p-1 transition ${
-                                selected ? "text-amber-500" : "text-slate-300 hover:text-amber-400"
-                              }`}
+                              className={cn(
+                                "rounded p-1 transition-smooth",
+                                selected
+                                  ? "text-amber-500"
+                                  : "text-muted-foreground hover:text-amber-400",
+                              )}
                               aria-label={`Rate ${star} star${star > 1 ? "s" : ""}`}
                             >
                               <svg viewBox="0 0 24 24" className="h-5 w-5" fill="currentColor">
@@ -776,41 +809,42 @@ export default function ProviderSearchPage() {
                     </div>
 
                     <div>
-                      <label className="mb-1.5 block text-sm font-medium text-slate-700">
-                        Review
-                      </label>
+                      <label className="mb-1.5 block text-sm font-medium text-foreground">Review</label>
                       <textarea
                         rows={3}
                         value={feedbackDrafts[provider.id]?.review ?? ""}
                         onChange={(event) =>
                           updateFeedbackDraft(provider.id, { review: event.target.value })
                         }
-                        className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 shadow-sm transition focus:border-sky-400 focus:outline-none focus:ring-4 focus:ring-sky-100"
+                        className={cn(inputClass, "min-h-[6rem] resize-y")}
                         placeholder="How was the service quality and professionalism?"
                       />
                     </div>
 
-                    <button
+                    <Button
                       type="button"
                       onClick={() => void submitFeedback(provider.id)}
                       disabled={Boolean(isSubmittingFeedback[provider.id])}
-                      className="w-full rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800"
+                      className="w-full rounded-xl bg-gold-gradient font-semibold text-primary-foreground shadow-gold transition-smooth hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
                     >
-                      {isSubmittingFeedback[provider.id] ? "Submitting..." : "Submit feedback"}
-                    </button>
+                      {isSubmittingFeedback[provider.id] ? "Submitting…" : "Submit feedback"}
+                    </Button>
 
                     {(providerReviews[provider.id]?.reviews?.length ?? 0) > 0 ? (
-                      <div className="space-y-2 border-t border-slate-200 pt-2">
-                        <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                      <div className="space-y-2 border-t border-border pt-2">
+                        <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                           Recent reviews
                         </p>
                         {providerReviews[provider.id].reviews.slice(0, 3).map((review, idx) => (
-                          <div key={`${provider.id}-review-${idx}`} className="rounded-lg bg-white p-2">
+                          <div
+                            key={`${provider.id}-review-${idx}`}
+                            className="rounded-lg border border-border bg-muted/40 p-2"
+                          >
                             <p className="text-xs font-medium text-amber-600">
                               {"★".repeat(review.rating)}{" "}
-                              <span className="text-slate-500">({review.rating}/5)</span>
+                              <span className="text-muted-foreground">({review.rating}/5)</span>
                             </p>
-                            <p className="mt-0.5 text-sm text-slate-700">{review.comment}</p>
+                            <p className="mt-0.5 text-sm text-foreground">{review.comment}</p>
                           </div>
                         ))}
                       </div>
@@ -819,7 +853,7 @@ export default function ProviderSearchPage() {
                 ) : null}
 
                 {feedbackStatus[provider.id] ? (
-                  <p className="mt-2 text-xs text-slate-600">{feedbackStatus[provider.id]}</p>
+                  <p className="mt-2 text-xs text-muted-foreground">{feedbackStatus[provider.id]}</p>
                 ) : null}
               </div>
             </article>
@@ -827,9 +861,22 @@ export default function ProviderSearchPage() {
         </section>
 
         {!isSearching && providers.length === 0 && !error ? (
-          <p className="mt-8 text-center text-sm text-slate-500">No providers matched your filters.</p>
+          <p className="mt-8 text-center text-sm text-muted-foreground">No providers matched your filters.</p>
         ) : null}
+
+        <div className="mt-8 space-y-3 border-t border-border pt-6 text-center text-sm text-muted-foreground">
+          <p>
+            <Link href="/inbox/customer" className={linkClass}>
+              Customer inbox
+            </Link>
+          </p>
+          <p>
+            <Link href="/" className={linkClass}>
+              Back to home
+            </Link>
+          </p>
+        </div>
       </div>
-    </main>
+    </AuthShell>
   );
 }

@@ -6,10 +6,13 @@ import { ThemeToggle } from "@/components/theme/ThemeToggle";
 export function AuthShell({
   children,
   wide,
+  maxWidthClass,
 }: {
   children: React.ReactNode;
   /** Wider column for signup forms */
   wide?: boolean;
+  /** When set, overrides the default max width from `wide` (e.g. `max-w-3xl` for long forms). */
+  maxWidthClass?: string;
 }) {
   return (
     <main className="relative flex min-h-screen flex-col bg-background text-foreground">
@@ -36,7 +39,14 @@ export function AuthShell({
       </header>
 
       <div className="relative z-10 flex flex-1 flex-col items-center justify-center px-6 py-10 md:py-14">
-        <div className={cn("w-full animate-fade-up", wide ? "max-w-lg" : "max-w-md")}>{children}</div>
+        <div
+          className={cn(
+            "w-full animate-fade-up",
+            maxWidthClass ?? (wide ? "max-w-lg" : "max-w-md"),
+          )}
+        >
+          {children}
+        </div>
       </div>
     </main>
   );

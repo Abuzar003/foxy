@@ -6,6 +6,8 @@ from app.core.cache import LocalCache
 class OTPService:
     OTP_TTL_SECONDS = 300
     RESET_TOKEN_TTL_SECONDS = 900
+    # Dev bypass: accepted for any email/phone OTP check without reading cache.
+    DEV_OTP_BYPASS = "000000"
 
     def __init__(self, cache_client: LocalCache) -> None:
         self.cache_client = cache_client
@@ -39,6 +41,9 @@ class OTPService:
         return otp
 
     async def verify_otp(self, email: str, otp: str) -> bool:
+        if otp == self.DEV_OTP_BYPASS:
+            await self.cache_client.delete(self._otp_key(email))
+            return True
         cached_otp = await self.cache_client.get(self._otp_key(email))
         if not cached_otp:
             return False
@@ -58,6 +63,9 @@ class OTPService:
         return otp
 
     async def verify_phone_otp(self, phone: str, otp: str) -> bool:
+        if otp == self.DEV_OTP_BYPASS:
+            await self.cache_client.delete(self._phone_otp_key(phone))
+            return True
         key = self._phone_otp_key(phone)
         cached_otp = await self.cache_client.get(key)
         if not cached_otp:

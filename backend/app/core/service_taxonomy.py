@@ -1,73 +1,26 @@
 SERVICE_TAXONOMY: dict[str, list[str]] = {
-    "Beauty & Wellness": [
-        "Waxing Specialist",
-        "Facial Esthetician",
-        "Manicure/Pedicure Artist",
-        "Threading & Brow Shaping",
-        "Hair Stylist",
-        "Massage Therapist",
-        "Laser Technician",
-        "Makeup Artist",
-        "Bleach & Detan Expert",
-        "Hydra-Facialist",
+    "Transport": [
+        "On-Demand Drivers",
     ],
-    "Appliance Repair & Maintenance": [
-        "AC Foam-Jet Technician",
-        "HVAC Repair",
-        "Refrigerator Specialist",
-        "Washing Machine Repair",
-        "Water Purifier (RO) Specialist",
-        "Microwave & OTG Technician",
-        "Kitchen Chimney Specialist",
-        "Geyser/Water Heater Repair",
-        "Television Technician",
-        "Laptop & Mobile Repair",
+    "Home help": [
+        "Short-Term Maids / Helpers",
     ],
-    "Home Cleaning & Pest Control": [
-        "Deep Cleaning Professional",
-        "Party Cleaners",
-        "Bathroom Sanitation Specialist",
-        "Kitchen Degreasing",
-        "Sofa & Carpet Shampooing",
-        "Pest Control Operator",
-        "Disinfection Specialist",
-        "Mattress Cleaning",
-        "Full Home Deep Clean",
-        "Wall & Ceiling Cleaning",
-        "Window & Mesh Cleaning",
+    "Delivery & loading": [
+        "Delivery / Helper / Loader",
     ],
-    "Handyman & Home Improvement": [
-        "Electrician",
-        "Plumber",
-        "Plumbers",
-        "Carpenter",
-        "Wall Painter",
-        "Waterproofing Expert",
-        "Smart Home Installer",
-        "Drill & Hang Specialist",
-        "Floor Polisher",
-        "Door & Window Specialist",
-        "Tiler",
+    "Events": [
+        "Event Helpers",
     ],
-    "New & Niche Services": [
-        "Native Product Consultant",
-        "InstaHelp Responder",
-        "Wedding Helpers",
-        "Home Cook",
-        "Gardener",
-        "Gardening Specialist",
-        "Elder Care Assistant",
-        "Driver on Demand",
-        "Drivers",
-        "Moving Assistance",
-        "Packers & Movers",
-        "Packers",
-        "Security Guard",
-        "Receptionist",
-        "Furniture Restoration",
-        "Visual Consultant",
-        "Air Purifier Technician",
+    "Security": [
+        "Security Guards",
     ],
 }
 
 ALL_SERVICES = {service for services in SERVICE_TAXONOMY.values() for service in services}
+
+
+def category_for_service(service: str) -> str | None:
+    for category, services in SERVICE_TAXONOMY.items():
+        if service in services:
+            return category
+    return None

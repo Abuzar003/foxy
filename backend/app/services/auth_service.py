@@ -1,4 +1,5 @@
 from app.core.exceptions import ConflictException, UnauthorizedException
+from app.core.service_taxonomy import category_for_service
 from app.core.security import create_access_token, hash_password, verify_password
 from app.models.user import UserDocument
 from app.repositories.user_repository import UserRepository
@@ -40,7 +41,10 @@ class AuthService:
         }
 
         if role == "provider":
-            user_doc["service_category"] = payload.service_category
+            assert isinstance(payload, ProviderCreate)
+            user_doc["services"] = payload.services
+            primary_category = category_for_service(payload.services[0])
+            user_doc["service_category"] = primary_category or ""
 
         created = await self.user_repo.create_user(user_doc)
         public_user = self.user_repo.to_public_user(created)
