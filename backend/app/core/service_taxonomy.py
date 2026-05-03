@@ -3,7 +3,7 @@ SERVICE_TAXONOMY: dict[str, list[str]] = {
         "On-Demand Drivers",
     ],
     "Home help": [
-        "Short-Term Maids / Helpers",
+        "Maids / Helpers",
     ],
     "Delivery & loading": [
         "Delivery / Helper / Loader",

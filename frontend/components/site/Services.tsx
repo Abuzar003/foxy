@@ -3,7 +3,7 @@ import { Car, Home, Package, Users, Shield, ArrowRight } from "lucide-react";
 
 const services = [
   { icon: Car, name: "On-Demand Drivers", blurb: "Trips, functions, emergency travel" },
-  { icon: Home, name: "Short-Term Maids / Helpers", blurb: "Maids and helpers — cleaning, shifting" },
+  { icon: Home, name: "Maids / Helpers", blurb: "Maids and helpers — cleaning, shifting" },
   { icon: Package, name: "Delivery / Helper / Loader", blurb: "Lifting, shifting, shop runs" },
   { icon: Users, name: "Event Helpers", blurb: "Waiters, setup, clean-up" },
   {

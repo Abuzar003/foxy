@@ -24,7 +24,7 @@ _SERVICE_KEYWORDS: dict[str, tuple[str, ...]] = {
         "transport",
         "wheel",
     ),
-    "Short-Term Maids / Helpers": (
+    "Maids / Helpers": (
         "maid",
         "maids",
         "helper",
