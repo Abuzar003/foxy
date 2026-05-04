@@ -24,6 +24,7 @@ from app.schemas.offer import (
 )
 
 router = APIRouter(prefix="/offers", tags=["Offers"])
+AUTO_PROVIDER_REPLY = "Yes, I will be available."
 
 
 def _parse_date(date_str: str) -> date:
@@ -212,8 +213,9 @@ async def create_offer(
             "slots": normalized_slots,
             "total_hours": total_hours,
             "total_days": total_days,
-            "status": "pending",
+            "status": "accepted",
             "message": payload.message,
+            "provider_reply": AUTO_PROVIDER_REPLY,
         }
     )
     return _to_offer_response(created)

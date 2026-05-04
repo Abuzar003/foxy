@@ -105,6 +105,7 @@ function ProviderSearchInner() {
     Record<string, Array<{ date: string; start_time: string; end_time: string }>>
   >({});
   const [eligibleReviewProviderIds, setEligibleReviewProviderIds] = useState<Set<string>>(new Set());
+  const [confirmedBooking, setConfirmedBooking] = useState<{ providerName: string; service: string } | null>(null);
 
   const debouncedServiceNeed = useDebouncedValue(serviceNeedInput, SEARCH_DEBOUNCE_MS);
   const debouncedAddress = useDebouncedValue(address, SEARCH_DEBOUNCE_MS);
@@ -403,7 +404,7 @@ function ProviderSearchInner() {
           }));
           return;
         }
-        await createOffer(
+        const createdOffer = await createOffer(
           {
             provider_id: provider.id,
             service,
@@ -418,6 +419,10 @@ function ProviderSearchInner() {
           },
           token,
         );
+        setConfirmedBooking({
+          providerName: createdOffer.provider_name || provider.full_name,
+          service: createdOffer.service || service,
+        });
       } else {
         const slotsRaw = offerSlots[provider.id] ?? [];
         const slots = slotsRaw.map((s) => ({
@@ -446,7 +451,7 @@ function ProviderSearchInner() {
           }));
           return;
         }
-        await createOffer(
+        const createdOffer = await createOffer(
           {
             provider_id: provider.id,
             service,
@@ -459,9 +464,16 @@ function ProviderSearchInner() {
           },
           token,
         );
+        setConfirmedBooking({
+          providerName: createdOffer.provider_name || provider.full_name,
+          service: createdOffer.service || service,
+        });
       }
 
-      setOfferStatus((prev) => ({ ...prev, [provider.id]: "Offer sent to provider inbox." }));
+      setOfferStatus((prev) => ({
+        ...prev,
+        [provider.id]: "Booking confirmed by provider. Check your customer inbox.",
+      }));
       setActiveOfferProviderId(null);
       setOfferMessage((prev) => ({ ...prev, [provider.id]: "" }));
     } catch (err) {
@@ -1034,6 +1046,27 @@ function ProviderSearchInner() {
           </p>
         </div>
       </div>
+      {confirmedBooking ? (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-900/45 px-4">
+          <div className="w-full max-w-md rounded-2xl border border-emerald-200 bg-white p-6 shadow-xl">
+            <p className="text-xs font-semibold uppercase tracking-wide text-emerald-700">Booking confirmed</p>
+            <h3 className="mt-2 text-lg font-bold text-slate-900">{confirmedBooking.providerName}</h3>
+            <p className="mt-1 text-sm text-slate-600">
+              Your booking for <span className="font-semibold text-slate-900">{confirmedBooking.service}</span> is
+              confirmed by provider.
+            </p>
+            <div className="mt-4 flex justify-end">
+              <Button
+                type="button"
+                className="rounded-xl bg-emerald-600 px-4 text-white hover:bg-emerald-700"
+                onClick={() => setConfirmedBooking(null)}
+              >
+                OK
+              </Button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </AuthShell>
   );
 }

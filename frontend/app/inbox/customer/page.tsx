@@ -102,7 +102,7 @@ export default function CustomerInboxPage() {
                         : "bg-amber-100 text-amber-700"
                   }`}
                 >
-                  {offer.status}
+                  {offer.status === "accepted" ? "booking confirmed" : offer.status}
                 </span>
               </div>
               <p className="mt-1 text-sm text-slate-600">Service: {offer.service}</p>

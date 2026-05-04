@@ -111,7 +111,7 @@ export default function ProviderInboxPage() {
                     statusBadgeClass(offer.status),
                   )}
                 >
-                  {offer.status}
+                  {offer.status === "accepted" ? "booking confirmed" : offer.status}
                 </span>
               </div>
 
