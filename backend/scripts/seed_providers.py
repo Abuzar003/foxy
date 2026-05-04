@@ -18,6 +18,13 @@ DEFAULT_PASSWORD = "Password@123"
 DEFAULT_PROVIDER_COUNT = 1
 PLATFORM_NAME = "Haazir"
 
+SERVICE_PRICE_RANGES: dict[str, tuple[int, int]] = {
+    "Security Guards": (800, 1500),
+    "On-Demand Drivers": (500, 1200),
+    "Event Helpers": (400, 1000),
+    "Maids / Helpers": (300, 700),
+}
+
 
 def _build_bio(full_name: str, primary_service: str, category: str) -> str:
     return (
@@ -79,6 +86,7 @@ async def seed_providers(count: int, password: str) -> None:
                 skipped_count += 1
                 continue
 
+            min_day, max_day = SERVICE_PRICE_RANGES.get(primary_service, (900, 2800))
             payload = {
                 "email": email,
                 "hashed_password": hashed_password,
@@ -88,7 +96,7 @@ async def seed_providers(count: int, password: str) -> None:
                 "terms_accepted": True,
                 "service_category": category,
                 "services": services,
-                "price_per_day": float(1200 + provider_number * 20),
+                "price_per_day": float(min_day + (provider_number % (max_day - min_day + 1))),
                 "price_per_hour": float(200 + (provider_number % 10) * 25),
                 "profile_photo": _build_profile_photo_url(full_name, primary_service),
                 "about": _build_bio(full_name, primary_service, category),

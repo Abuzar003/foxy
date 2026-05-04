@@ -2,11 +2,11 @@ import Link from "next/link";
 import { Car, Home, Package, PartyPopper, Shield, ArrowRight } from "lucide-react";
 
 const services = [
-  { icon: Car, name: "On-Demand Drivers", blurb: "Trips, airport runs, hourly driving" },
-  { icon: Home, name: "Maids / Helpers", blurb: "Maids and helpers — cleaning, shifting" },
+  { icon: Car, name: "On-Demand Drivers", blurb: "Trips, airport runs, hourly driving (₹500 - ₹1200/day)" },
+  { icon: Home, name: "Maids / Helpers", blurb: "Maids and helpers — cleaning, shifting (₹300 - ₹700/day, 2-5 days)" },
   { icon: Package, name: "Delivery / Helper / Loader", blurb: "Delivery, lifting, moving help" },
-  { icon: PartyPopper, name: "Event Helpers", blurb: "Weddings, parties, setup and support" },
-  { icon: Shield, name: "Security Guards", blurb: "Guards, venues, residential security" },
+  { icon: PartyPopper, name: "Event Helpers", blurb: "Weddings, parties, setup and support (₹400 - ₹1000/event)" },
+  { icon: Shield, name: "Security Guards", blurb: "Guards, venues, residential security (₹800 - ₹1500/day)" },
 ];
 
 const Services = () => {

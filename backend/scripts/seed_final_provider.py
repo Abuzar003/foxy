@@ -52,6 +52,13 @@ LAST_NAMES = [
     "Kulkarni", "Menon", "Bhatt", "Saxena", "Tiwari", "Chopra", "Agarwal",
 ]
 
+SERVICE_PRICE_RANGES: dict[str, tuple[int, int]] = {
+    "Security Guards": (800, 1500),
+    "On-Demand Drivers": (500, 1200),
+    "Event Helpers": (400, 1000),
+    "Maids / Helpers": (300, 700),
+}
+
 
 def _flatten_services() -> list[tuple[str, str]]:
     pairs: list[tuple[str, str]] = []
@@ -187,6 +194,7 @@ async def run(*, password: str, seed: int | None, no_delete: bool, count: int) -
                 phone = _indian_mobile(rng)
 
             years = 2 + rng.randint(0, 12)
+            min_day, max_day = SERVICE_PRICE_RANGES.get(primary_service, (900, 2800))
             payload = {
                 "email": email,
                 "hashed_password": hashed,
@@ -196,7 +204,7 @@ async def run(*, password: str, seed: int | None, no_delete: bool, count: int) -
                 "terms_accepted": True,
                 "service_category": category,
                 "services": services,
-                "price_per_day": float(rng.randint(900, 2800)),
+                "price_per_day": float(rng.randint(min_day, max_day)),
                 "price_per_hour": float(rng.randint(150, 450)),
                 "profile_photo": _portrait_url(rng),
                 "about": _build_bio(full_name, primary_service, city, years),

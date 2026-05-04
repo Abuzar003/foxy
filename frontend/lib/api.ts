@@ -18,6 +18,34 @@ export class ApiError extends Error {
   }
 }
 
+function extractErrorMessage(value: unknown): string | null {
+  if (typeof value === "string") {
+    const trimmed = value.trim();
+    return trimmed.length > 0 ? trimmed : null;
+  }
+
+  if (Array.isArray(value)) {
+    const messages = value
+      .map((item) => extractErrorMessage(item))
+      .filter((item): item is string => Boolean(item));
+    return messages.length > 0 ? messages.join("; ") : null;
+  }
+
+  if (value && typeof value === "object") {
+    if ("msg" in value) {
+      return extractErrorMessage((value as { msg?: unknown }).msg);
+    }
+    if ("message" in value) {
+      return extractErrorMessage((value as { message?: unknown }).message);
+    }
+    if ("detail" in value) {
+      return extractErrorMessage((value as { detail?: unknown }).detail);
+    }
+  }
+
+  return null;
+}
+
 export async function apiRequest<T>(path: string, options: RequestOptions = {}): Promise<T> {
   const { method = "GET", body, headers } = options;
 
@@ -33,9 +61,7 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
   const payload = await response.json().catch(() => null);
 
   if (!response.ok) {
-    const detail =
-      (payload && typeof payload === "object" && "detail" in payload && String(payload.detail)) ||
-      "Request failed";
+    const detail = extractErrorMessage(payload) ?? "Request failed";
     throw new ApiError(detail, response.status);
   }
 

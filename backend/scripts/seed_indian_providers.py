@@ -121,6 +121,13 @@ LOCATIONS: list[tuple[str, str, str, str]] = [
     ("Nagpur", "Dharampeth", "Maharashtra", "440010"),
 ]
 
+SERVICE_PRICE_RANGES: dict[str, tuple[int, int]] = {
+    "Security Guards": (800, 1500),
+    "On-Demand Drivers": (500, 1200),
+    "Event Helpers": (400, 1000),
+    "Maids / Helpers": (300, 700),
+}
+
 
 def _random_counts_per_category(rng: random.Random, total: int) -> dict[str, int]:
     """Multinomial-style split: each provider is assigned a random category (sums to total)."""
@@ -242,7 +249,8 @@ async def seed_indian_providers(count: int, password: str, seed: int | None) -> 
                 continue
 
             years = 2 + rng.randint(0, 12)
-            price_per_day = float(rng.randint(900, 2800))
+            min_day, max_day = SERVICE_PRICE_RANGES.get(primary_service, (900, 2800))
+            price_per_day = float(rng.randint(min_day, max_day))
             price_per_hour = float(rng.randint(150, 450))
 
             payload = {
